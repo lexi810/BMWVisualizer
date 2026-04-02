@@ -340,7 +340,7 @@ def parse_xlsx() -> dict[str, dict]:
                 data["company_hq_lat"] = lat
                 data["company_hq_lng"] = lng
                 geocoded += 1
-            time.sleep(1)  # Nominatim rate limit
+            time.sleep(0.3)  # Nominatim rate limit (1 req/sec policy, but few calls needed)
 
     log.info("Parsed %d unique companies (%d geocoded)", len(companies), geocoded)
     return companies
