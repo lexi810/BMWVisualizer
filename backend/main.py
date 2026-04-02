@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from backend.database import get_db, init_db, migrate_db
@@ -20,10 +22,17 @@ log = logging.getLogger(__name__)
 
 app = FastAPI(title="BMW Battery Intelligence API", version="1.0.0")
 
+_default_cors = "http://localhost:5173,http://127.0.0.1:5173"
+_cors_raw = os.getenv("CORS_ORIGINS", _default_cors).strip()
+if _cors_raw == "*":
+    _cors_origins = ["*"]
+else:
+    _cors_origins = [o.strip() for o in _cors_raw.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=_cors_origins != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -114,3 +123,9 @@ def seed_status(db: Session = Depends(get_db)):
 @app.get("/api/health")
 def health():
     return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+# Production: serve Vite build from the same origin as /api (register after API routes)
+_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if _dist.is_dir():
+    app.mount("/", StaticFiles(directory=str(_dist), html=True), name="spa")

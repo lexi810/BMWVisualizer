@@ -15,6 +15,31 @@ bash run.sh
 
 Dashboard opens at **http://localhost:5173** · API docs at **http://localhost:8000/docs**
 
+## Production (single server)
+
+The API serves the built Vite app from `frontend/dist` when that folder exists, so the UI and `/api` share one origin (no dev proxy required).
+
+```bash
+cd frontend && npm ci && npm run build && cd ..
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+Open **http://localhost:8000** (API docs: `/docs`). Set `CORS_ORIGINS` to your public site URL if the frontend is hosted on a different domain than the API.
+
+**Docker** (builds the frontend inside the image):
+
+```bash
+docker build -t bmw-battery-dashboard .
+docker run --rm -p 8000:8000 \
+  -e ANTHROPIC_API_KEY=... \
+  -e TAVILY_API_KEY=... \
+  -v "$(pwd)/data:/app/data" \
+  -v "$(pwd)/uploads:/app/uploads" \
+  bmw-battery-dashboard
+```
+
+Persist the SQLite file by mounting a file or setting `DATABASE_URL` to a path on a mounted volume (for example `sqlite:////data/battery_intel.db`).
+
 ## Architecture
 
 - **Backend**: FastAPI + SQLite (SQLAlchemy) on port 8000
@@ -48,6 +73,7 @@ Dashboard opens at **http://localhost:5173** · API docs at **http://localhost:8
 | `PERPLEXITY_API_KEY` | Perplexity sonar API key |
 | `DATABASE_URL` | SQLite path (default: `sqlite:///./battery_intel.db`) |
 | `UPLOAD_DIR` | Upload directory (default: `./uploads`) |
+| `CORS_ORIGINS` | Comma-separated allowed origins, or `*` (see `.env.example`) |
 
 ## API Routes
 
