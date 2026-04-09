@@ -347,6 +347,92 @@ def discover_companies(segment: str, existing_names: list[str], custom_query: st
     return []
 
 
+CLASSIFY_PARTNERSHIPS_PROMPT = """You are a battery/energy industry analyst. For each partnership below, infer the type and direction from the company names and any available context.
+
+partnership_type — choose ONE:
+- jv              : Joint venture (new shared entity)
+- supply_agreement: One company supplies materials/products to the other
+- licensing       : Technology or IP licensing
+- equity_stake    : Investment / equity stake
+- r_and_d_collab  : R&D or technology collaboration
+- government_grant: Government funding, grant, or loan
+- other           : Cannot be determined
+
+direction — choose ONE:
+- supplier_to_buyer      : clear supply relationship
+- investor_to_investee   : clear investment relationship
+- bidirectional          : JV, R&D collab, or symmetric deal
+
+Return ONLY a JSON object keyed by the integer partnership ID provided.
+Example: {"12": {"type": "supply_agreement", "direction": "supplier_to_buyer"}, "7": {"type": "equity_stake", "direction": "investor_to_investee"}}"""
+
+
+CLASSIFY_BATCH_PROMPT = """You are a battery/energy industry analyst. Classify each company into our taxonomy based on its description and industry info.
+
+For company_type choose EXACTLY ONE from: start-up, cell supplier, materials supplier, EV OEM, testing partner, prototyping partner, recycler, equipment supplier, R&D, services, modeling/software, other.
+
+Return ONLY a JSON object mapping company name to company_type. No other text.
+Example: {"Tesla": "EV OEM", "CATL": "cell supplier", "Li-Cycle": "recycler", "McKinsey": "services"}"""
+
+
+def classify_companies_batch(companies_info: list[dict]) -> dict[str, str]:
+    """Classify company_type for a batch of companies using Claude.
+
+    Each dict should have keys: 'name', 'description' (optional), 'industry' (optional).
+    Returns {company_name: company_type}.
+    """
+    if not companies_info:
+        return {}
+
+    lines = []
+    for c in companies_info:
+        parts = [f"- {c['name']}"]
+        if c.get('description'):
+            parts.append(f"  Description: {c['description'][:300]}")
+        if c.get('industry'):
+            parts.append(f"  Industry: {c['industry']}")
+        lines.append("\n".join(parts))
+
+    user_msg = "Classify these companies:\n\n" + "\n\n".join(lines)
+
+    try:
+        result = _claude_json(CLASSIFY_BATCH_PROMPT, user_msg)
+        if isinstance(result, dict):
+            log.info("Batch classified %d companies", len(result))
+            return result
+    except Exception as e:
+        log.error("Batch classification failed: %s", e)
+    return {}
+
+
+def classify_partnerships_batch(partnerships_info: list[dict]) -> dict[str, dict]:
+    """Classify partnership_type and direction for a batch of partnerships.
+
+    Each dict should have keys: 'id', 'company_a', 'company_b', 'scope' (optional).
+    Returns {str(id): {type, direction}}.
+    """
+    if not partnerships_info:
+        return {}
+
+    lines = []
+    for p in partnerships_info:
+        parts = [f"- ID {p['id']}: {p['company_a']} <-> {p['company_b']}"]
+        if p.get('scope'):
+            parts.append(f"  Context: {p['scope'][:150]}")
+        lines.append("\n".join(parts))
+
+    user_msg = "Classify these partnerships:\n\n" + "\n\n".join(lines)
+
+    try:
+        result = _claude_json(CLASSIFY_PARTNERSHIPS_PROMPT, user_msg)
+        if isinstance(result, dict):
+            log.info("Batch classified %d partnerships", len(result))
+            return result
+    except Exception as e:
+        log.error("Partnership batch classification failed: %s", e)
+    return {}
+
+
 def extract_from_document(text: str, filename: str) -> dict:
     """Extract companies, news, and proceedings from document text."""
     user_msg = f"Filename: {filename}\n\nDocument text:\n{text[:40000]}"

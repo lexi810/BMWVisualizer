@@ -24,6 +24,7 @@ export const getPartnerships = (params) => api.get('/partnerships', { params })
 export const getPartnership = (id) => api.get(`/partnerships/${id}`)
 export const createPartnership = (data) => api.post('/partnerships', data)
 export const getPartnershipGraph = () => api.get('/partnerships/graph')
+export const enrichPartnershipNetwork = () => api.post('/partnerships/enrich')
 
 // Facilities & Metrics
 export const getCompanyFacilities = (id) => api.get(`/companies/${id}/facilities`)

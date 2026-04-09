@@ -17,22 +17,22 @@ body {
 /* ═══════════════════════════════════════
    Heatmap cluster styles
    ═══════════════════════════════════════ */
-.heatmap-count-label {
+.heatmap-cluster-icon {
   background: transparent !important;
   border: none !important;
-  display: flex !important;
+}
+.heatmap-zone {
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  animation: heat-pulse 3s ease-in-out infinite;
 }
-.heatmap-count {
-  font-weight: 800;
-  font-size: 16px;
-  color: #fff;
-  text-shadow:
-    0 0 6px rgba(0, 0, 0, 0.9),
-    0 0 14px rgba(0, 0, 0, 0.5),
-    0 1px 2px rgba(0, 0, 0, 0.8);
-  pointer-events: none;
+@keyframes heat-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.05); opacity: 1; }
 }
 .heatmap-dot-icon {
   background: transparent !important;

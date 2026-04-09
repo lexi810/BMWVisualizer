@@ -428,6 +428,53 @@ def _clean_hyperlink(val: str) -> str:
     return m.group(1) if m else str(val)
 
 
+INDEPENDENT_INVESTORS_NAME = 'Independent Investors'
+
+COMPANY_WORDS = frozenset({
+    'inc', 'llc', 'corp', 'corporation', 'ltd', 'plc', 'sa', 'ag', 'gmbh', 'co',
+    'capital', 'ventures', 'partners', 'group', 'holdings', 'management',
+    'fund', 'advisors', 'investments', 'associates', 'bank', 'financial',
+    'energy', 'technologies', 'technology', 'motors', 'industries',
+    'enterprises', 'commission', 'platform', 'cloud', 'solutions',
+    'services', 'systems', 'labs', 'laboratories', 'institute',
+    'university', 'foundation', 'company', 'global', 'network',
+})
+
+
+def _is_individual_investor(raw_name: str) -> tuple[bool, str]:
+    """Detect individual (person) investors. Returns (is_individual, clean_name).
+
+    Conservative — only catches clear cases to avoid grouping real companies.
+    """
+    stripped = raw_name.strip()
+
+    # Definite: "Bill Lee(Bill Lee)" — person name repeated in parens
+    m = re.match(r'^(.+?)\(\1\)$', stripped)
+    if m:
+        return True, m.group(1).strip()
+
+    # Has stock ticker → definitely a company
+    if re.search(r'\([A-Z]{2,5}:\s*[A-Z0-9.]+\)', stripped):
+        return False, stripped
+
+    # Has parenthetical (like "Firm(Person)") → treat as company
+    if '(' in stripped:
+        return False, stripped
+
+    # Simple 2-word name with no company indicators → likely a person
+    words = stripped.split()
+    if len(words) != 2:
+        return False, stripped
+
+    if {w.lower() for w in words} & COMPANY_WORDS:
+        return False, stripped
+
+    if all(w[0].isupper() and w.isalpha() for w in words):
+        return True, stripped
+
+    return False, stripped
+
+
 DEAL_TYPE_MAP = {
     'joint venture': 'Joint Venture',
     'off-take': 'Off-take',
@@ -526,6 +573,8 @@ def _import_pitchbook_companies(df: pd.DataFrame, db, ts: str) -> dict:
 
 def _import_pitchbook_deals(df: pd.DataFrame, db, ts: str) -> dict:
     companies_added = partnerships = 0
+    individuals_grouped = 0
+
     for _, row in df.iterrows():
         name = _col(row, 'Company Name', 'Company', 'Companies')
         if not name:
@@ -547,6 +596,13 @@ def _import_pitchbook_deals(df: pd.DataFrame, db, ts: str) -> dict:
         if website:
             website = _clean_hyperlink(website)
 
+        # Collect PitchBook industry info for later AI classification
+        pb_industry = ' / '.join(filter(None, [
+            _col(row, 'Primary PitchBook Industry Sector'),
+            _col(row, 'Primary PitchBook Industry Group'),
+            _col(row, 'Primary PitchBook Industry Code'),
+        ]))
+
         existed = db.query(Company).filter(Company.company_name.ilike(name)).first() is not None
         company = _upsert_company(db, name, {
             'company_hq_city': city,
@@ -556,6 +612,8 @@ def _import_pitchbook_deals(df: pd.DataFrame, db, ts: str) -> dict:
             'company_website': website,
             'number_of_employees': _parse_employees(_col(row, 'Current Employees', 'Employees', 'Number of Employees')),
             'data_source': 'pitchbook',
+            # Stash PitchBook industry for the AI enrichment pass
+            'notes': pb_industry or None,
         }, ts)
         if not existed:
             companies_added += 1
@@ -565,12 +623,29 @@ def _import_pitchbook_deals(df: pd.DataFrame, db, ts: str) -> dict:
 
         investors_raw = _col(row, 'Investors', 'Lead/Sole Investors', 'Lead Investors', 'Investor(s)', 'All Investors')
         if investors_raw:
-            for investor in _split_investors(investors_raw):
-                investor = _clean_company_name(investor)
-                _add_partner(company, investor, ptype, scale, date)
-                _create_partnership_record(db, company, investor, ptype, scale, date, 'pitchbook', ts)
+            for raw_investor in _split_investors(investors_raw):
+                investor = _clean_company_name(raw_investor)
+                is_individual, person_name = _is_individual_investor(raw_investor)
+
+                if is_individual:
+                    # Group under a single "Independent Investors" entity
+                    investor_label = INDEPENDENT_INVESTORS_NAME
+                    scale_with_name = f"{person_name}" + (f" — {scale}" if scale else "")
+                    _add_partner(company, investor_label, ptype, scale_with_name, date)
+                    _create_partnership_record(
+                        db, company, investor_label, ptype, scale_with_name, date, 'pitchbook', ts,
+                    )
+                    individuals_grouped += 1
+                else:
+                    _add_partner(company, investor, ptype, scale, date)
+                    _create_partnership_record(db, company, investor, ptype, scale, date, 'pitchbook', ts)
                 partnerships += 1
-    return {'companies_added': companies_added, 'companies_updated': 0, 'partnerships_added': partnerships}
+
+    log.info("PitchBook deals: %d individuals grouped under '%s'", individuals_grouped, INDEPENDENT_INVESTORS_NAME)
+    return {
+        'companies_added': companies_added, 'companies_updated': 0,
+        'partnerships_added': partnerships, 'individuals_grouped': individuals_grouped,
+    }
 
 
 # ── Crunchbase organizations ──────────────────────────────────────────────────
@@ -682,6 +757,21 @@ async def upload_partnerships(file: UploadFile = File(...), db: Session = Depend
     result = IMPORTERS[fmt](df, db, ts)
     db.commit()
 
+    # Kick off background AI enrichment for companies missing company_type
+    enrich_job = ResearchJob(
+        job_type="pitchbook_enrich",
+        status="pending",
+        target=file.filename,
+        created_at=ts,
+        updated_at=ts,
+    )
+    db.add(enrich_job)
+    db.commit()
+    db.refresh(enrich_job)
+    enrich_job_id = enrich_job.id
+
+    asyncio.create_task(_enrich_companies_bg(enrich_job_id, ts))
+
     SOURCE_LABELS = {
         'pitchbook_companies': 'PitchBook — Company List',
         'pitchbook_deals': 'PitchBook — Deals',
@@ -689,4 +779,103 @@ async def upload_partnerships(file: UploadFile = File(...), db: Session = Depend
         'crunchbase_rounds': 'Crunchbase — Funding Rounds',
     }
     log.info("Partnership import (%s): %s", fmt, result)
-    return {"source": SOURCE_LABELS[fmt], "format": fmt, **result, "filename": file.filename}
+    return {
+        "source": SOURCE_LABELS[fmt], "format": fmt,
+        **result, "filename": file.filename,
+        "enrich_job_id": enrich_job_id,
+    }
+
+
+# ── Background AI enrichment ────────────────────────────────────────────────
+
+BATCH_SIZE = 20  # companies per Claude call
+
+
+async def _enrich_companies_bg(job_id: int, ts: str):
+    """Background task: classify company_type for companies missing it."""
+    from backend.ai_research import classify_companies_batch
+    from backend.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+        if job:
+            job.status = "running"
+            job.updated_at = datetime.now(timezone.utc).isoformat()
+            db.commit()
+
+        # Find ALL companies that lack a company_type (any source)
+        candidates = (
+            db.query(Company)
+            .filter(
+                (Company.company_type == None) | (Company.company_type == ''),  # noqa: E711
+                Company.company_name != INDEPENDENT_INVESTORS_NAME,
+            )
+            .all()
+        )
+
+        if not candidates:
+            log.info("Enrich job %d: no companies need classification", job_id)
+            job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+            if job:
+                job.status = "complete"
+                job.result = json.dumps({"classified": 0})
+                job.updated_at = datetime.now(timezone.utc).isoformat()
+                db.commit()
+            return
+
+        log.info("Enrich job %d: classifying %d companies", job_id, len(candidates))
+        classified_total = 0
+
+        # Process in batches
+        for i in range(0, len(candidates), BATCH_SIZE):
+            batch = candidates[i:i + BATCH_SIZE]
+            info = []
+            for c in batch:
+                entry = {'name': c.company_name}
+                # Use summary or description for context
+                desc = c.summary or c.long_description or c.description or ''
+                if desc:
+                    entry['description'] = desc
+                # Use notes field where we stashed PitchBook industry info
+                if c.notes:
+                    entry['industry'] = c.notes
+                info.append(entry)
+
+            try:
+                results = await asyncio.get_event_loop().run_in_executor(
+                    None, classify_companies_batch, info,
+                )
+            except Exception as e:
+                log.error("Enrich batch %d failed: %s", i, e)
+                continue
+
+            for c in batch:
+                ctype = results.get(c.company_name)
+                if ctype:
+                    c.company_type = ctype
+                    classified_total += 1
+
+            db.commit()
+            log.info("Enrich job %d: classified batch %d-%d (%d hits)",
+                     job_id, i, i + len(batch), sum(1 for c in batch if results.get(c.company_name)))
+
+        job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+        if job:
+            job.status = "complete"
+            job.result = json.dumps({"classified": classified_total, "total_candidates": len(candidates)})
+            job.updated_at = datetime.now(timezone.utc).isoformat()
+            db.commit()
+
+        log.info("Enrich job %d complete: classified %d / %d companies", job_id, classified_total, len(candidates))
+
+    except Exception as e:
+        log.error("Enrich job %d failed: %s", job_id, e)
+        job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+        if job:
+            job.status = "failed"
+            job.result = str(e)
+            job.updated_at = datetime.now(timezone.utc).isoformat()
+            db.commit()
+    finally:
+        db.close()

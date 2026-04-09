@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap, useMapEvents } from 'react-leaflet'
+import React, { useEffect, useState, useMemo } from 'react'
+import { MapContainer, TileLayer, CircleMarker, Marker, Popup } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
-import 'leaflet.heat'
 import { getCompaniesMap } from '../api/client'
 
 const LIGHT_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -28,60 +27,31 @@ const TYPE_COLORS = {
   'other': '#9CA3AF',
 }
 
-const HEAT_GRADIENT = {
-  0.0: '#3B82F6',
-  0.2: '#06B6D4',
-  0.4: '#22C55E',
-  0.6: '#EAB308',
-  0.8: '#F97316',
-  1.0: '#EF4444',
+/* ── Heat-style bubble cluster icon ── */
+
+function getHeatStyle(count) {
+  if (count >= 50) return { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.55)', glow: 'rgba(239, 68, 68, 0.25)' }
+  if (count >= 30) return { color: '#F97316', bg: 'rgba(249, 115, 22, 0.55)', glow: 'rgba(249, 115, 22, 0.25)' }
+  if (count >= 15) return { color: '#EAB308', bg: 'rgba(234, 179, 8, 0.55)', glow: 'rgba(234, 179, 8, 0.25)' }
+  if (count >= 5)  return { color: '#06B6D4', bg: 'rgba(6, 182, 212, 0.55)', glow: 'rgba(6, 182, 212, 0.25)' }
+  return { color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.55)', glow: 'rgba(59, 130, 246, 0.25)' }
 }
 
-/* ── Leaflet heat layer managed via useMap ── */
-
-function HeatLayer({ points }) {
-  const map = useMap()
-  const layerRef = useRef(null)
-
-  useEffect(() => {
-    const heat = L.heatLayer(points, {
-      radius: 35,
-      blur: 28,
-      maxZoom: 10,
-      minOpacity: 0.35,
-      gradient: HEAT_GRADIENT,
-    })
-    layerRef.current = heat
-
-    const sync = () => {
-      if (map.getZoom() < SPLIT_ZOOM) {
-        if (!map.hasLayer(heat)) heat.addTo(map)
-      } else {
-        if (map.hasLayer(heat)) map.removeLayer(heat)
-      }
-    }
-    sync()
-    map.on('zoomend', sync)
-
-    return () => {
-      map.off('zoomend', sync)
-      if (map.hasLayer(heat)) map.removeLayer(heat)
-    }
-  }, [map, points])
-
-  return null
-}
-
-/* ── Cluster label (floating count number, no bubble) ── */
-
-function createCountLabel(cluster) {
+function createClusterIcon(cluster) {
   const count = cluster.getChildCount()
-  const fontSize = count >= 100 ? 15 : count >= 10 ? 17 : 15
+  const { color, bg, glow } = getHeatStyle(count)
+  const size = Math.min(90, 44 + Math.sqrt(count) * 4)
   return L.divIcon({
-    html: `<span class="heatmap-count">${count}</span>`,
-    className: 'heatmap-count-label',
-    iconSize: L.point(44, 24),
-    iconAnchor: L.point(22, 12),
+    html: `<div class="heatmap-zone" style="
+      width:${size}px;height:${size}px;
+      background:radial-gradient(circle, ${bg} 30%, ${glow} 65%, transparent 100%);
+      border:2px solid ${color};
+      color:#fff;
+      font-size:${count >= 100 ? 13 : 15}px;
+      box-shadow:0 0 ${Math.round(size * 0.6)}px ${glow};
+    "><span>${count}</span></div>`,
+    className: 'heatmap-cluster-icon',
+    iconSize: L.point(size, size),
   })
 }
 
@@ -175,19 +145,26 @@ function Legend() {
   )
 }
 
-/* ── Heat legend (gradient bar) ── */
+/* ── Heat legend (discrete bands) ── */
 
 function HeatLegend() {
+  const bands = [
+    { label: '50+', color: '#EF4444' },
+    { label: '30–49', color: '#F97316' },
+    { label: '15–29', color: '#EAB308' },
+    { label: '5–14', color: '#06B6D4' },
+    { label: '1–4', color: '#3B82F6' },
+  ]
   return (
     <div className="absolute bottom-8 left-4 z-[1000] bg-white rounded-lg shadow-lg text-xs border border-[#B8CAD1] px-3 py-2">
-      <div className="font-semibold text-[#031E49] mb-1.5">Company Density</div>
-      <div
-        className="h-3 w-36 rounded-sm"
-        style={{ background: 'linear-gradient(to right, #3B82F6, #06B6D4, #22C55E, #EAB308, #F97316, #EF4444)' }}
-      />
-      <div className="flex justify-between mt-1 text-gray-500">
-        <span>Low</span>
-        <span>High</span>
+      <div className="font-semibold text-[#031E49] mb-1.5">Density</div>
+      <div className="space-y-1">
+        {bands.map(({ label, color }) => (
+          <div key={label} className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color, opacity: 0.8 }} />
+            <span className="text-gray-600">{label}</span>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -219,11 +196,6 @@ export default function CompanyMap({ filters, onSelectCompany, highlightName, da
     return true
   }), [companies, filters])
 
-  const heatPoints = useMemo(
-    () => filtered.map((c) => [c.lat, c.lng, 1]),
-    [filtered],
-  )
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
@@ -238,10 +210,14 @@ export default function CompanyMap({ filters, onSelectCompany, highlightName, da
         center={[39.5, -98.35]}
         zoom={4}
         style={{ height: '100%', width: '100%' }}
+        maxBounds={[[-85, -180], [85, 180]]}
+        maxBoundsViscosity={1.0}
+        worldCopyJump={false}
         zoomAnimation={true}
         zoomAnimationThreshold={4}
         wheelPxPerZoomLevel={120}
         wheelDebounceTime={80}
+        minZoom={3}
       >
         <TileLayer
           key={darkMode ? 'dark' : 'light'}
@@ -250,12 +226,10 @@ export default function CompanyMap({ filters, onSelectCompany, highlightName, da
         />
 
         {heatmapMode ? (
-          <>
-            <HeatLayer points={heatPoints} />
-            <MarkerClusterGroup
+          <MarkerClusterGroup
               key="heatmap-clusters"
               chunkedLoading
-              iconCreateFunction={createCountLabel}
+              iconCreateFunction={createClusterIcon}
               maxClusterRadius={80}
               disableClusteringAtZoom={SPLIT_ZOOM}
               spiderfyOnMaxZoom={false}
@@ -274,7 +248,6 @@ export default function CompanyMap({ filters, onSelectCompany, highlightName, da
                 </Marker>
               ))}
             </MarkerClusterGroup>
-          </>
         ) : (
           filtered.map((c, idx) => {
             const isHighlighted = highlightName && c.company_name === highlightName

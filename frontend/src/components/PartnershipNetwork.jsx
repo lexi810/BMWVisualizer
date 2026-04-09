@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import { getPartnershipGraph, getCompaniesNetwork } from '../api/client'
+import { getPartnershipGraph, getCompaniesNetwork, enrichPartnershipNetwork, getJob } from '../api/client'
 
 /* ── Constants ── */
 
@@ -134,6 +134,39 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
   const [filterDateTo, setFilterDateTo] = useState('')
   const [filterGeography, setFilterGeography] = useState('')
   const [filterGovToggle, setFilterGovToggle] = useState('all') // all, gov_only, private_only
+
+  // Classify state
+  const [classifyState, setClassifyState] = useState('idle') // idle | running | done | error
+  const [classifyResult, setClassifyResult] = useState(null)
+  const classifyPollRef = useRef(null)
+
+  const handleClassify = useCallback(async () => {
+    setClassifyState('running')
+    setClassifyResult(null)
+    try {
+      const { data } = await enrichPartnershipNetwork()
+      const jobId = data.job_id
+      classifyPollRef.current = setInterval(async () => {
+        try {
+          const { data: job } = await getJob(jobId)
+          if (job.status === 'complete') {
+            clearInterval(classifyPollRef.current)
+            setClassifyState('done')
+            setClassifyResult(job.result || {})
+            // Reload graph to reflect new classifications
+            getPartnershipGraph().then(({ data: g }) => setGraphData(g)).catch(() => {})
+          } else if (job.status === 'failed') {
+            clearInterval(classifyPollRef.current)
+            setClassifyState('error')
+          }
+        } catch (_) {}
+      }, 3000)
+    } catch (_) {
+      setClassifyState('error')
+    }
+  }, [])
+
+  useEffect(() => () => clearInterval(classifyPollRef.current), [])
 
   // Lazy-load react-force-graph-2d
   useEffect(() => {
@@ -577,6 +610,35 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
             }`}
           >
             Filters
+          </button>
+
+          {/* Classify All button */}
+          <button
+            onClick={classifyState === 'idle' || classifyState === 'done' || classifyState === 'error' ? handleClassify : undefined}
+            disabled={classifyState === 'running'}
+            title="AI-classify all untyped companies and partnerships"
+            className={`text-xs px-3 py-1.5 rounded border transition-colors flex items-center gap-1.5 ${
+              classifyState === 'running'
+                ? (dark ? 'border-purple-600 text-purple-400 bg-purple-900/20' : 'border-purple-400 text-purple-600 bg-purple-50')
+              : classifyState === 'done'
+                ? (dark ? 'border-green-600 text-green-400' : 'border-green-500 text-green-600')
+              : classifyState === 'error'
+                ? (dark ? 'border-red-600 text-red-400' : 'border-red-400 text-red-600')
+              : (dark ? 'border-gray-600 text-gray-400 hover:border-purple-500' : 'border-[#B8CAD1] text-gray-600 hover:border-purple-400')
+            }`}
+          >
+            {classifyState === 'running' ? (
+              <><svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg> Classifying…</>
+            ) : classifyState === 'done' && classifyResult ? (
+              <span>
+                Classified ({classifyResult.companies_classified ?? 0}co · {classifyResult.partnerships_classified ?? 0}p)
+              </span>
+            ) : (
+              <>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                Classify All
+              </>
+            )}
           </button>
 
           <input

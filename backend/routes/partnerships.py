@@ -1,6 +1,7 @@
 """Partnership routes — CRUD, graph data, import helpers."""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from datetime import datetime, timezone
@@ -9,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from backend.database import get_db
+from backend.database import get_db, SessionLocal
 from backend.models import (
     Company,
     CompanyFacility,
@@ -18,6 +19,7 @@ from backend.models import (
     PartnershipMember,
     NewsHeadline,
     ConferenceProceeding,
+    ResearchJob,
 )
 
 log = logging.getLogger(__name__)
@@ -150,6 +152,107 @@ def list_partnerships(
 def partnership_graph(db: Session = Depends(get_db)):
     """Return nodes + links for the enhanced bubble graph."""
     return _build_partnership_graph(db)
+
+
+@router.post("/partnerships/enrich")
+async def enrich_network(db: Session = Depends(get_db)):
+    """Background job: AI-classify all unclassified company types and partnership types."""
+    ts = datetime.now(timezone.utc).isoformat()
+    job = ResearchJob(job_type="network_enrich", status="pending", target="network", created_at=ts, updated_at=ts)
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    job_id = job.id
+    asyncio.create_task(_enrich_network_bg(job_id, ts))
+    return {"job_id": job_id}
+
+
+async def _enrich_network_bg(job_id: int, ts: str):
+    """Classify untyped companies and unclassified partnerships."""
+    from backend.ai_research import classify_companies_batch, classify_partnerships_batch
+
+    BATCH = 20
+    db = SessionLocal()
+    try:
+        job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+        if job:
+            job.status = "running"; job.updated_at = datetime.now(timezone.utc).isoformat(); db.commit()
+
+        # ── 1. Classify companies missing company_type ──────────────────
+        untyped = (
+            db.query(Company)
+            .filter((Company.company_type == None) | (Company.company_type == ''))  # noqa: E711
+            .filter(Company.company_name != 'Independent Investors')
+            .all()
+        )
+        companies_classified = 0
+        for i in range(0, len(untyped), BATCH):
+            batch = untyped[i:i + BATCH]
+            info = [{'name': c.company_name,
+                     'description': (c.summary or c.long_description or c.description or '')[:300],
+                     'industry': c.notes or ''} for c in batch]
+            try:
+                results = await asyncio.get_event_loop().run_in_executor(None, classify_companies_batch, info)
+                for c in batch:
+                    ct = results.get(c.company_name)
+                    if ct:
+                        c.company_type = ct
+                        companies_classified += 1
+                db.commit()
+            except Exception as e:
+                log.error("Company classify batch %d failed: %s", i, e)
+
+        # ── 2. Classify partnerships with null or 'other' type ──────────
+        untyped_ps = (
+            db.query(Partnership)
+            .filter((Partnership.partnership_type == None) | (Partnership.partnership_type == 'other'))  # noqa: E711
+            .all()
+        )
+        partnerships_classified = 0
+        for i in range(0, len(untyped_ps), BATCH):
+            batch = untyped_ps[i:i + BATCH]
+            # Build context from member company names
+            info = []
+            for p in batch:
+                names = [m.company.company_name for m in p.members if m.company] if p.members else []
+                if len(names) < 2:
+                    continue
+                info.append({'id': p.id, 'company_a': names[0], 'company_b': names[1],
+                             'scope': p.scope or ''})
+            if not info:
+                continue
+            try:
+                results = await asyncio.get_event_loop().run_in_executor(None, classify_partnerships_batch, info)
+                for p in batch:
+                    r = results.get(str(p.id))
+                    if r:
+                        new_type = r.get('type')
+                        new_dir = r.get('direction')
+                        if new_type and new_type != 'other':
+                            p.partnership_type = new_type
+                            partnerships_classified += 1
+                        if new_dir:
+                            p.direction = new_dir
+                db.commit()
+            except Exception as e:
+                log.error("Partnership classify batch %d failed: %s", i, e)
+
+        result = {'companies_classified': companies_classified, 'partnerships_classified': partnerships_classified,
+                  'companies_total': len(untyped), 'partnerships_total': len(untyped_ps)}
+        job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+        if job:
+            job.status = "complete"; job.result = json.dumps(result)
+            job.updated_at = datetime.now(timezone.utc).isoformat(); db.commit()
+        log.info("Network enrich job %d complete: %s", job_id, result)
+
+    except Exception as e:
+        log.error("Network enrich job %d failed: %s", job_id, e)
+        job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+        if job:
+            job.status = "failed"; job.result = str(e)
+            job.updated_at = datetime.now(timezone.utc).isoformat(); db.commit()
+    finally:
+        db.close()
 
 
 @router.get("/partnerships/{partnership_id}")
