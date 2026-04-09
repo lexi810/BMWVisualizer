@@ -115,6 +115,20 @@ For keywords pick ALL that apply from: solid-state, sodium-ion, lithium metal, a
 For announced_partners include every partnership, JV, investment, supply agreement, or MOU you can find.
 Each partner object must have: partner_name, type_of_partnership (Joint Venture / Investment / MOU / Off-take / Supply Agreement / Other), scale (dollar amount, capacity, or description), date (YYYY or YYYY-MM).
 
+For partnerships, provide detailed structured partnership data.
+Each partnership object must have:
+- partner_name: string
+- partnership_type: one of [jv, supply_agreement, licensing, equity_stake, r_and_d_collab, government_grant, other]
+- stage: one of [announced, signed, active, dissolved]
+- direction: one of [supplier_to_buyer, investor_to_investee, bidirectional]
+- company_role: one of [supplier, buyer, investor, investee, partner]
+- partner_role: one of [supplier, buyer, investor, investee, partner]
+- deal_value_millions_usd: number or null
+- date_announced: string (YYYY or YYYY-MM or YYYY-MM-DD) or null
+- scope: string (description of what the partnership covers)
+- geography: string or null
+- industry_segment: one of [cell_manufacturing, materials_mining, recycling, ev_oem, energy_storage, other] or null
+
 For summary write 3-5 sentences covering: what the company does, their core technology, stage of commercialization, and why they matter to BMW.
 
 Return a JSON object with EXACTLY these fields:
@@ -127,11 +141,13 @@ Return a JSON object with EXACTLY these fields:
   "company_focus": [string],
   "keywords": [string],
   "announced_partners": [{"partner_name": string, "type_of_partnership": string, "scale": string, "date": string}],
+  "partnerships": [{"partner_name": string, "partnership_type": string, "stage": string, "direction": string, "company_role": string, "partner_role": string, "deal_value_millions_usd": number, "date_announced": string, "scope": string, "geography": string, "industry_segment": string}],
   "number_of_employees": integer or null,
   "market_cap_usd": number or null (in millions USD, e.g. 1200.0 means $1.2B),
   "revenue_usd": number or null (in millions USD, annual, most recent),
   "total_funding_usd": number or null (in millions USD, cumulative VC/PE/grants raised),
   "last_fundraise_date": string or null,
+  "founding_year": integer or null,
   "company_website": string or null,
   "summary": string
 }"""

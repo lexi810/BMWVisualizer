@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { getCompanies } from '../api/client'
-import CompanyDetail from './CompanyDetail'
 
 const PAGE_SIZE = 50
 
@@ -56,6 +55,7 @@ const CATEGORY_COLORS = {
 const COLS = [
   { key: '_row', label: '#', align: 'center', w: 'w-10' },
   { key: 'company_name', label: 'Companies', align: 'left', w: 'min-w-[220px]' },
+  { key: '_partner_count', label: 'Partners', align: 'center', w: 'w-16' },
   { key: 'employee_size', label: 'Employees', align: 'left', w: 'w-20' },
   { key: 'funding_status', label: 'Funding', align: 'left', w: 'w-20' },
   { key: 'revenue_usd', label: 'Revenue ($M)', align: 'right', w: 'w-24' },
@@ -90,14 +90,13 @@ function exportCSV(companies) {
   a.click()
 }
 
-export default function CompanyTable({ filters }) {
+export default function CompanyTable({ filters, onOpenCompany }) {
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState('company_name')
   const [sortDir, setSortDir] = useState(1)
   const [page, setPage] = useState(1)
-  const [selectedId, setSelectedId] = useState(null)
   const [activeCategory, setActiveCategory] = useState('all')
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
@@ -241,10 +240,11 @@ export default function CompanyTable({ filters }) {
                 const rowNum = startIdx + i + 1
                 const rev = fmtNum(c.revenue_usd)
                 const fund = fmtNum(c.total_funding_usd)
+                const partnerCount = (c.announced_partners || []).length
                 return (
                   <tr
                     key={c.id}
-                    onClick={() => setSelectedId(c.id)}
+                    onClick={() => onOpenCompany ? onOpenCompany(c.id) : null}
                     className={`cursor-pointer border-b border-[#EEF1F4] hover:bg-[#EDF3FF] transition-colors ${
                       i % 2 === 0 ? 'bg-white' : 'bg-[#FAFBFC]'
                     }`}
@@ -254,6 +254,12 @@ export default function CompanyTable({ filters }) {
                     <td className="px-3 py-1.5 text-center text-[#8899A6] font-mono">{rowNum}</td>
                     {/* Company name */}
                     <td className="px-3 py-1.5 font-medium text-[#1A5FAD] whitespace-nowrap">{c.company_name}</td>
+                    {/* Partners */}
+                    <td className="px-3 py-1.5 text-center text-gray-600 whitespace-nowrap">
+                      {partnerCount > 0 ? (
+                        <span className="bg-blue-50 text-blue-700 text-[11px] px-1.5 py-0.5 rounded-full">{partnerCount}</span>
+                      ) : ''}
+                    </td>
                     {/* Employees */}
                     <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">{c.employee_size || ''}</td>
                     {/* Funding Status */}
@@ -376,10 +382,6 @@ export default function CompanyTable({ filters }) {
         />
       </div>
 
-      {/* Detail panel */}
-      {selectedId && (
-        <CompanyDetail companyId={selectedId} onClose={() => setSelectedId(null)} />
-      )}
     </div>
   )
 }

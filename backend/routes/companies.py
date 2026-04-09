@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models import Company, NewsHeadline, ConferenceProceeding, ResearchJob
+from backend.models import Company, NewsHeadline, ConferenceProceeding, Partnership, PartnershipMember, ResearchJob
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/companies", tags=["companies"])
@@ -384,6 +384,15 @@ async def research_company_endpoint(req: ResearchRequest, db: Session = Depends(
                                             if k in NewsHeadline.__table__.columns.keys()}))
             inner_db.commit()
 
+            # Create Partnership records from AI research
+            partnerships_data = result.get("partnerships", [])
+            for pdata in partnerships_data:
+                try:
+                    _create_ai_partnership(inner_db, existing, pdata, ts)
+                except Exception as pe:
+                    log.warning("Failed to create partnership: %s", pe)
+            inner_db.commit()
+
             j = inner_db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
             if j:
                 j.status = "complete"
@@ -404,6 +413,58 @@ async def research_company_endpoint(req: ResearchRequest, db: Session = Depends(
 
     asyncio.create_task(_run())
     return {"job_id": job_id}
+
+
+def _create_ai_partnership(db, company: Company, pdata: dict, ts: str):
+    """Create a Partnership + PartnershipMember record from AI research data."""
+    partner_name = (pdata.get("partner_name") or "").strip()
+    if not partner_name:
+        return
+
+    # Look up or create partner company
+    partner = db.query(Company).filter(Company.company_name.ilike(partner_name)).first()
+    if not partner:
+        partner = Company(company_name=partner_name, data_source="ai_research", last_updated=ts)
+        db.add(partner)
+        db.flush()
+
+    ptype = pdata.get("partnership_type", "other")
+    # Check for duplicates
+    existing_members = db.query(PartnershipMember).filter(
+        PartnershipMember.company_id == company.id
+    ).all()
+    for em in existing_members:
+        p = db.query(Partnership).filter(Partnership.id == em.partnership_id).first()
+        if p and p.partnership_type == ptype:
+            sibling = db.query(PartnershipMember).filter(
+                PartnershipMember.partnership_id == em.partnership_id,
+                PartnershipMember.company_id == partner.id,
+            ).first()
+            if sibling:
+                return  # Already exists
+
+    p = Partnership(
+        partnership_name=f"{company.company_name} - {partner_name}",
+        partnership_type=ptype,
+        stage=pdata.get("stage", "active"),
+        direction=pdata.get("direction", "bidirectional"),
+        date_announced=pdata.get("date_announced"),
+        deal_value=pdata.get("deal_value_millions_usd"),
+        scope=pdata.get("scope"),
+        geography=pdata.get("geography"),
+        industry_segment=pdata.get("industry_segment"),
+        source_name="ai_research",
+        date_sourced=ts,
+        created_at=ts,
+        updated_at=ts,
+    )
+    db.add(p)
+    db.flush()
+
+    company_role = pdata.get("company_role", "partner")
+    partner_role = pdata.get("partner_role", "partner")
+    db.add(PartnershipMember(partnership_id=p.id, company_id=company.id, role=company_role))
+    db.add(PartnershipMember(partnership_id=p.id, company_id=partner.id, role=partner_role))
 
 
 @router.post("/search/custom")
@@ -656,6 +717,14 @@ async def bulk_research(req: BulkResearchRequest, db: Session = Depends(get_db))
                                 article[lf] = json.dumps(article[lf])
                         inner_db.add(NewsHeadline(**{k: v for k, v in article.items()
                                                     if k in NewsHeadline.__table__.columns.keys()}))
+                    inner_db.commit()
+
+                    # Create Partnership records
+                    for pdata in result.get("partnerships", []):
+                        try:
+                            _create_ai_partnership(inner_db, company, pdata, ts)
+                        except Exception as pe:
+                            log.warning("Failed to create partnership: %s", pe)
                     inner_db.commit()
 
                 j = inner_db.query(ResearchJob).filter(ResearchJob.id == job_id).first()

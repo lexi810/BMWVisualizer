@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db, init_db, migrate_db
 from backend.models import Company, SyncLog
-from backend.routes import companies, jobs, news, proceedings, upload
+from backend.routes import companies, jobs, news, partnerships, proceedings, upload
 from backend.scheduler import get_next_run_time, start_scheduler, stop_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
@@ -38,6 +38,7 @@ app.add_middleware(
 )
 
 app.include_router(companies.router)
+app.include_router(partnerships.router)
 app.include_router(news.router)
 app.include_router(proceedings.router)
 app.include_router(upload.router)

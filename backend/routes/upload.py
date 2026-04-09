@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from backend.config import UPLOAD_DIR
 from backend.database import get_db
-from backend.models import Company, ConferenceProceeding, NewsHeadline, ResearchJob
+from backend.models import Company, ConferenceProceeding, NewsHeadline, Partnership, PartnershipMember, ResearchJob
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/upload", tags=["upload"])
@@ -321,6 +321,93 @@ def _add_partner(company: Company, partner_name: str, ptype: str, scale: str | N
     company.announced_partners = json.dumps(existing)
 
 
+LEGACY_TO_NEW_TYPE = {
+    'Joint Venture': 'jv',
+    'Investment': 'equity_stake',
+    'MOU': 'r_and_d_collab',
+    'Off-take': 'supply_agreement',
+    'Supply Agreement': 'supply_agreement',
+    'Other': 'other',
+}
+
+DIRECTION_FOR_TYPE = {
+    'equity_stake': 'investor_to_investee',
+    'supply_agreement': 'supplier_to_buyer',
+    'jv': 'bidirectional',
+    'r_and_d_collab': 'bidirectional',
+    'other': 'bidirectional',
+}
+
+
+def _create_partnership_record(
+    db, company: Company, partner_name: str, legacy_type: str,
+    scale: str | None, date: str | None, source: str, ts: str,
+):
+    """Create a Partnership + PartnershipMember record in the new normalized tables."""
+    new_type = LEGACY_TO_NEW_TYPE.get(legacy_type, 'other')
+    direction = DIRECTION_FOR_TYPE.get(new_type, 'bidirectional')
+
+    # Look up or create the partner company
+    partner = db.query(Company).filter(Company.company_name.ilike(partner_name)).first()
+    if not partner:
+        partner = Company(company_name=partner_name, data_source=source, last_updated=ts)
+        db.add(partner)
+        db.flush()
+
+    # Check for duplicate partnership
+    existing = (
+        db.query(Partnership)
+        .join(PartnershipMember)
+        .filter(
+            Partnership.partnership_type == new_type,
+            PartnershipMember.company_id.in_([company.id, partner.id]),
+        )
+        .all()
+    )
+    for ep in existing:
+        member_ids = {m.company_id for m in ep.members}
+        if company.id in member_ids and partner.id in member_ids:
+            return  # Already exists
+
+    deal_value = None
+    if scale:
+        try:
+            cleaned = scale.replace('$', '').replace(',', '').strip()
+            if cleaned.upper().endswith('B'):
+                deal_value = float(cleaned[:-1]) * 1000
+            elif cleaned.upper().endswith('M'):
+                deal_value = float(cleaned[:-1])
+        except (ValueError, TypeError):
+            pass
+
+    p = Partnership(
+        partnership_name=f"{company.company_name} - {partner_name}",
+        partnership_type=new_type,
+        stage="active",
+        direction=direction,
+        date_announced=date,
+        deal_value=deal_value,
+        scope=scale,
+        source_name=source,
+        date_sourced=ts,
+        created_at=ts,
+        updated_at=ts,
+    )
+    db.add(p)
+    db.flush()
+
+    # Determine roles
+    if direction == 'investor_to_investee':
+        db.add(PartnershipMember(partnership_id=p.id, company_id=partner.id, role='investor'))
+        db.add(PartnershipMember(partnership_id=p.id, company_id=company.id, role='investee'))
+    elif direction == 'supplier_to_buyer':
+        db.add(PartnershipMember(partnership_id=p.id, company_id=partner.id, role='supplier'))
+        db.add(PartnershipMember(partnership_id=p.id, company_id=company.id, role='buyer'))
+    else:
+        db.add(PartnershipMember(partnership_id=p.id, company_id=company.id, role='partner'))
+        db.add(PartnershipMember(partnership_id=p.id, company_id=partner.id, role='partner'))
+
+
 def _has_col(cols: set, *keywords) -> bool:
     cols_lower = {c.lower() for c in cols}
     return any(any(kw in c for c in cols_lower) for kw in keywords)
@@ -439,6 +526,7 @@ def _import_pitchbook_deals(df: pd.DataFrame, db, ts: str) -> dict:
         if investors_raw:
             for investor in _split_investors(investors_raw):
                 _add_partner(company, investor, ptype, scale, date)
+                _create_partnership_record(db, company, investor, ptype, scale, date, 'pitchbook', ts)
                 partnerships += 1
     return {'companies_added': companies_added, 'companies_updated': 0, 'partnerships_added': partnerships}
 
@@ -500,6 +588,7 @@ def _import_crunchbase_rounds(df: pd.DataFrame, db, ts: str) -> dict:
                 investors.update(_split_investors(raw))
         for investor in investors:
             _add_partner(company, investor, ptype, scale, date)
+            _create_partnership_record(db, company, investor, ptype, scale, date, 'crunchbase', ts)
             partnerships += 1
     return {'companies_added': companies_added, 'companies_updated': 0, 'partnerships_added': partnerships}
 
