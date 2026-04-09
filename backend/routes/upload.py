@@ -413,6 +413,21 @@ def _has_col(cols: set, *keywords) -> bool:
     return any(any(kw in c for c in cols_lower) for kw in keywords)
 
 
+def _clean_company_name(name: str) -> str:
+    """Strip stock ticker suffixes like '(NAS: TSLA)' from PitchBook company names."""
+    if not name:
+        return name
+    return re.sub(r'\s*\([A-Z]{2,5}:\s*[A-Z0-9.]+\)\s*$', '', name).strip()
+
+
+def _clean_hyperlink(val: str) -> str:
+    """Extract URL from Excel =HYPERLINK() formula."""
+    if not val:
+        return val
+    m = re.match(r'=HYPERLINK\("([^"]+)"', str(val))
+    return m.group(1) if m else str(val)
+
+
 DEAL_TYPE_MAP = {
     'joint venture': 'Joint Venture',
     'off-take': 'Off-take',
@@ -473,26 +488,31 @@ def _detect_format(cols: set) -> str | None:
 def _import_pitchbook_companies(df: pd.DataFrame, db, ts: str) -> dict:
     added = updated = 0
     for _, row in df.iterrows():
-        name = _col(row, 'Company Name', 'Company')
+        name = _col(row, 'Company Name', 'Company', 'Companies')
         if not name:
             continue
+        name = _clean_company_name(name)
         hq_raw = _col(row, 'HQ Location', 'Headquarters Location', 'Location', 'HQ')
         city, state, country = _parse_hq(hq_raw) if hq_raw else (None, None, None)
-        city = _col(row, 'HQ City', 'City') or city
-        state = _col(row, 'HQ State', 'State', 'Region') or state
-        country = _col(row, 'HQ Country', 'Country') or country
+        city = _col(row, 'Company City', 'HQ City', 'City') or city
+        state = _col(row, 'Company State/Province', 'HQ State', 'State', 'Region') or state
+        country = _col(row, 'Company Country/Territory/Region', 'HQ Country', 'Country') or country
+
+        website = _col(row, 'Company Website', 'Website', 'URL')
+        if website:
+            website = _clean_hyperlink(website)
 
         existed = db.query(Company).filter(Company.company_name.ilike(name)).first() is not None
         _upsert_company(db, name, {
             'company_hq_city': city,
             'company_hq_state': state,
             'company_hq_country': country,
-            'summary': _col(row, 'Business Description', 'Description', 'Company Description'),
-            'company_website': _col(row, 'Website', 'Company Website', 'URL'),
+            'summary': _col(row, 'Description', 'Business Description', 'Company Description'),
+            'company_website': website,
             'last_fundraise_date': _col(row, 'Last Financing Date', 'Last Funding Date'),
-            'total_funding_usd': _parse_money_millions(_col(row, 'Total Raised (USD)', 'Total Capital Raised (USD)', 'Total Raised', 'Total Funding')),
-            'market_cap_usd': _parse_money_millions(_col(row, 'Post-Money Valuation (USD)', 'Post Money Valuation', 'Valuation')),
-            'number_of_employees': _parse_employees(_col(row, 'Number of Employees', 'Employees', 'Employee Count')),
+            'total_funding_usd': _parse_money_millions(_col(row, 'Total Raised (USD)', 'Total Capital Raised (USD)', 'Total Raised', 'Total Funding', 'Raised to Date')),
+            'market_cap_usd': _parse_money_millions(_col(row, 'Post-Money Valuation (USD)', 'Post Money Valuation', 'Post Valuation', 'Valuation')),
+            'number_of_employees': _parse_employees(_col(row, 'Current Employees', 'Number of Employees', 'Employees', 'Employee Count')),
             'data_source': 'pitchbook',
         }, ts)
         if existed:
@@ -507,24 +527,46 @@ def _import_pitchbook_companies(df: pd.DataFrame, db, ts: str) -> dict:
 def _import_pitchbook_deals(df: pd.DataFrame, db, ts: str) -> dict:
     companies_added = partnerships = 0
     for _, row in df.iterrows():
-        name = _col(row, 'Company Name', 'Company')
+        name = _col(row, 'Company Name', 'Company', 'Companies')
         if not name:
             continue
-        ptype = _map_deal_type(_col(row, 'Deal Type', 'Round'))
+        name = _clean_company_name(name)
+
+        ptype = _map_deal_type(_col(row, 'Deal Type', 'Deal Type 2', 'Round'))
         date = _col(row, 'Deal Date', 'Close Date', 'Announced Date')
         scale = _scale_label(_parse_money_millions(_col(row, 'Deal Size (USD)', 'Deal Size', 'Amount (USD)', 'Amount')))
 
+        # Parse HQ from the rich "All Columns" export
+        hq_raw = _col(row, 'HQ Location', 'Headquarters Location')
+        city, state, country = _parse_hq(hq_raw) if hq_raw else (None, None, None)
+        city = _col(row, 'Company City', 'HQ City', 'City') or city
+        state = _col(row, 'Company State/Province', 'HQ State', 'State') or state
+        country = _col(row, 'Company Country/Territory/Region', 'HQ Country', 'Country') or country
+
+        website = _col(row, 'Company Website', 'Website', 'URL')
+        if website:
+            website = _clean_hyperlink(website)
+
         existed = db.query(Company).filter(Company.company_name.ilike(name)).first() is not None
-        company = _upsert_company(db, name, {'data_source': 'pitchbook'}, ts)
+        company = _upsert_company(db, name, {
+            'company_hq_city': city,
+            'company_hq_state': state,
+            'company_hq_country': country,
+            'summary': _col(row, 'Description', 'Business Description', 'Company Description'),
+            'company_website': website,
+            'number_of_employees': _parse_employees(_col(row, 'Current Employees', 'Employees', 'Number of Employees')),
+            'data_source': 'pitchbook',
+        }, ts)
         if not existed:
             companies_added += 1
 
         if date and not company.last_fundraise_date:
             company.last_fundraise_date = date
 
-        investors_raw = _col(row, 'Investors', 'Lead Investors', 'Investor(s)', 'All Investors')
+        investors_raw = _col(row, 'Investors', 'Lead/Sole Investors', 'Lead Investors', 'Investor(s)', 'All Investors')
         if investors_raw:
             for investor in _split_investors(investors_raw):
+                investor = _clean_company_name(investor)
                 _add_partner(company, investor, ptype, scale, date)
                 _create_partnership_record(db, company, investor, ptype, scale, date, 'pitchbook', ts)
                 partnerships += 1
@@ -606,6 +648,22 @@ async def upload_partnerships(file: UploadFile = File(...), db: Session = Depend
 
     df.columns = [str(c).strip() for c in df.columns]
     fmt = _detect_format(set(df.columns))
+
+    # PitchBook XLSX exports often have metadata rows before the real header.
+    # If format wasn't detected, scan rows 1-14 for the actual header row.
+    if not fmt and file.filename.endswith(".xlsx"):
+        for header_row in range(1, 15):
+            try:
+                df2 = pd.read_excel(path, header=header_row, dtype=str)
+                df2.columns = [str(c).strip() for c in df2.columns]
+                fmt2 = _detect_format(set(df2.columns))
+                if fmt2:
+                    df, fmt = df2, fmt2
+                    log.info("Detected header at row %d (format: %s)", header_row, fmt)
+                    break
+            except Exception:
+                continue
+
     if not fmt:
         raise HTTPException(
             400,
