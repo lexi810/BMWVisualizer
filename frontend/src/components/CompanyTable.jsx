@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react'
-import { getCompanies } from '../api/client'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import { getCompanies, addToWatchlist, removeFromWatchlist, getWatchlist } from '../api/client'
 
 const PAGE_SIZE = 50
 
@@ -54,6 +54,7 @@ const CATEGORY_COLORS = {
 
 const COLS = [
   { key: '_row', label: '#', align: 'center', w: 'w-10' },
+  { key: '_watch', label: '', align: 'center', w: 'w-8' },
   { key: 'company_name', label: 'Companies', align: 'left', w: 'min-w-[220px]' },
   { key: '_partner_count', label: 'Partners', align: 'center', w: 'w-16' },
   { key: 'employee_size', label: 'Employees', align: 'left', w: 'w-20' },
@@ -99,14 +100,36 @@ export default function CompanyTable({ filters, onOpenCompany }) {
   const [page, setPage] = useState(1)
   const [activeCategory, setActiveCategory] = useState('all')
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
+  const [watchedIds, setWatchedIds] = useState(new Set())
+  const [watchTogglingId, setWatchTogglingId] = useState(null)
 
   useEffect(() => {
     setLoading(true)
-    getCompanies()
-      .then(({ data }) => setCompanies(data))
+    Promise.all([getCompanies(), getWatchlist()])
+      .then(([{ data: cos }, { data: wl }]) => {
+        setCompanies(cos)
+        setWatchedIds(new Set(wl.map((e) => e.company_id)))
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
+
+  const handleWatchToggle = useCallback(async (e, companyId) => {
+    e.stopPropagation()
+    setWatchTogglingId(companyId)
+    try {
+      if (watchedIds.has(companyId)) {
+        await removeFromWatchlist(companyId)
+        setWatchedIds((prev) => { const s = new Set(prev); s.delete(companyId); return s })
+      } else {
+        await addToWatchlist(companyId)
+        setWatchedIds((prev) => new Set([...prev, companyId]))
+      }
+    } catch (err) {
+      console.error(err)
+    }
+    setWatchTogglingId(null)
+  }, [watchedIds])
 
   const categoryCounts = useMemo(() => {
     const counts = { all: companies.length }
@@ -152,7 +175,7 @@ export default function CompanyTable({ filters, onOpenCompany }) {
   const startIdx = (page - 1) * pageSize
 
   function handleSort(key) {
-    if (key === '_row') return
+    if (key === '_row' || key === '_watch') return
     if (sortKey === key) setSortDir((d) => -d)
     else { setSortKey(key); setSortDir(1) }
     setPage(1)
@@ -252,6 +275,17 @@ export default function CompanyTable({ filters, onOpenCompany }) {
                   >
                     {/* Row # */}
                     <td className="px-3 py-1.5 text-center text-[#8899A6] font-mono">{rowNum}</td>
+                    {/* Watch star */}
+                    <td className="px-1 py-1.5 text-center" onClick={(e) => handleWatchToggle(e, c.id)}>
+                      <button
+                        className={`transition-colors ${watchTogglingId === c.id ? 'opacity-40' : 'hover:scale-110'}`}
+                        title={watchedIds.has(c.id) ? 'Remove from watchlist' : 'Add to watchlist'}
+                      >
+                        <svg className={`w-4 h-4 ${watchedIds.has(c.id) ? 'fill-amber-400 text-amber-400' : 'fill-none text-gray-300 hover:text-amber-300'}`} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+                        </svg>
+                      </button>
+                    </td>
                     {/* Company name */}
                     <td className="px-3 py-1.5 font-medium text-[#1A5FAD] whitespace-nowrap">{c.company_name}</td>
                     {/* Partners */}

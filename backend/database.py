@@ -30,6 +30,10 @@ def init_db():
 
 def migrate_db():
     """Add new columns to existing tables without dropping data."""
+    # Ensure new tables exist (idempotent)
+    from backend import models  # noqa: F401
+    Base.metadata.create_all(bind=engine)
+
     new_columns = [
         ("market_cap_usd", "REAL"),
         ("revenue_usd", "REAL"),

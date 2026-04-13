@@ -6,9 +6,10 @@ import CompanyTable from './components/CompanyTable'
 import NewsFeed from './components/NewsFeed'
 import PartnershipNetwork from './components/PartnershipNetwork'
 import ResearchPanel from './components/ResearchPanel'
+import WatchlistPanel from './components/WatchlistPanel'
 import Proceedings from './components/Proceedings'
 import CompanyDetailPage from './components/CompanyDetailPage'
-import { getSeedStatus, triggerSeed } from './api/client'
+import { getSeedStatus, triggerSeed, getWatchlistDigest } from './api/client'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('map')
@@ -21,6 +22,20 @@ export default function App() {
   // Company detail full page view
   const [detailCompanyId, setDetailCompanyId] = useState(null)
   const seedPollRef = useRef(null)
+
+  const [watchlistBreaking, setWatchlistBreaking] = useState(0)
+
+  // Poll for breaking news count to show badge in navbar
+  useEffect(() => {
+    function checkBreaking() {
+      getWatchlistDigest()
+        .then(({ data }) => setWatchlistBreaking(data.filter((d) => d.has_breaking).length))
+        .catch(() => {})
+    }
+    checkBreaking()
+    const iv = setInterval(checkBreaking, 60000)
+    return () => clearInterval(iv)
+  }, [])
 
   // Dark mode — persisted in localStorage
   const [darkMode, setDarkMode] = useState(() => {
@@ -78,6 +93,7 @@ export default function App() {
           setActiveTab={(tab) => { setDetailCompanyId(null); setActiveTab(tab) }}
           darkMode={darkMode}
           setDarkMode={setDarkMode}
+          watchlistBreaking={watchlistBreaking}
         />
         <CompanyDetailPage
           companyId={detailCompanyId}
@@ -96,6 +112,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         darkMode={darkMode}
         setDarkMode={setDarkMode}
+        watchlistBreaking={watchlistBreaking}
       />
 
       {/* Seeding banner */}
@@ -131,6 +148,7 @@ export default function App() {
           {activeTab === 'table' && (
             <CompanyTable filters={filters} onOpenCompany={handleOpenCompanyPage} />
           )}
+          {activeTab === 'watchlist' && <WatchlistPanel />}
           {activeTab === 'news' && <NewsFeed />}
           {activeTab === 'network' && (
             <PartnershipNetwork onSelectCompany={handleOpenCompanyPage} darkMode={darkMode} />

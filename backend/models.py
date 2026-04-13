@@ -233,3 +233,30 @@ class CompanyMetric(Base):
 
 Index("ix_metric_company", CompanyMetric.company_id)
 Index("ix_metric_name", CompanyMetric.metric_name)
+
+
+class WatchlistEntry(Base):
+    __tablename__ = "watchlist"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, unique=True)
+    added_at = Column(Text)
+
+
+Index("ix_watchlist_company", WatchlistEntry.company_id)
+
+
+class WatchlistDigest(Base):
+    __tablename__ = "watchlist_digest"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    company_name = Column(Text)
+    run_date = Column(Text)          # YYYY-MM-DD
+    articles_json = Column(Text)     # JSON array of article objects
+    has_breaking = Column(Integer, default=0)
+    created_at = Column(Text)
+
+
+Index("ix_digest_company", WatchlistDigest.company_id)
+Index("ix_digest_run_date", WatchlistDigest.run_date)

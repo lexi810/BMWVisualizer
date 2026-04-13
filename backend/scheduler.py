@@ -11,6 +11,21 @@ log = logging.getLogger(__name__)
 _scheduler: BackgroundScheduler | None = None
 
 
+def _run_watchlist_digest():
+    from backend.database import SessionLocal
+    from backend.watchlist_digest import run_full_digest
+
+    log.info("Scheduled watchlist digest starting…")
+    db = SessionLocal()
+    try:
+        result = run_full_digest(db)
+        log.info("Watchlist digest complete: %s", result)
+    except Exception as e:
+        log.error("Watchlist digest failed: %s", e)
+    finally:
+        db.close()
+
+
 def _run_refresh():
     from backend.database import SessionLocal
     from backend.seed import import_naatbatt
@@ -37,8 +52,14 @@ def start_scheduler():
         id="naatbatt_weekly_refresh",
         replace_existing=True,
     )
+    _scheduler.add_job(
+        _run_watchlist_digest,
+        trigger=CronTrigger(hour=7, minute=0),  # every day at 7am UTC
+        id="watchlist_daily_digest",
+        replace_existing=True,
+    )
     _scheduler.start()
-    log.info("APScheduler started — weekly NAATBatt refresh every Sunday at 02:00.")
+    log.info("APScheduler started — weekly NAATBatt refresh Sundays 02:00, watchlist digest daily 07:00.")
 
 
 def stop_scheduler():

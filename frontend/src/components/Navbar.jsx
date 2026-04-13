@@ -4,13 +4,14 @@ import { getSyncStatus, triggerSync } from '../api/client'
 const TABS = [
   { id: 'map', label: 'Company Map' },
   { id: 'table', label: 'Company Table' },
+  { id: 'watchlist', label: 'Watchlist' },
   { id: 'news', label: 'News Feed' },
   { id: 'network', label: 'Partnership Network' },
-  { id: 'research', label: 'Research Panel' },
+  { id: 'research', label: 'Data Import' },
   { id: 'proceedings', label: 'Conference Proceedings' },
 ]
 
-export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode }) {
+export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode, watchlistBreaking = 0 }) {
   const [syncInfo, setSyncInfo] = useState(null)
   const [syncing, setSyncing] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -80,7 +81,12 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode 
                   : 'text-[#8aa4be] hover:text-white'
               }`}
             >
-              {tab.label}
+              <span className="flex items-center gap-1.5">
+                {tab.label}
+                {tab.id === 'watchlist' && watchlistBreaking > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                )}
+              </span>
               {activeTab === tab.id && (
                 <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4599FE]" />
               )}

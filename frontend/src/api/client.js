@@ -58,6 +58,14 @@ export const uploadPartnerships = (file) => {
 export const getJob = (id) => api.get(`/jobs/${id}`)
 export const listJobs = () => api.get('/jobs')
 
+// Watchlist
+export const getWatchlist = () => api.get('/watchlist')
+export const addToWatchlist = (companyId) => api.post(`/watchlist/${companyId}`)
+export const removeFromWatchlist = (companyId) => api.delete(`/watchlist/${companyId}`)
+export const getWatchlistDigest = () => api.get('/watchlist/digest/latest')
+export const triggerWatchlistDigest = () => api.post('/watchlist/digest/run')
+export const triggerCompanyDigest = (companyId) => api.post(`/watchlist/digest/run/${companyId}`)
+
 // Sync/Seed
 export const getSyncStatus = () => api.get('/sync/status')
 export const triggerSync = () => api.post('/sync/naatbatt')
