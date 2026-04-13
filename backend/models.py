@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Index, Integer, Text, Float, ForeignKey
+from sqlalchemy.orm import relationship
 from backend.database import Base
 
 
@@ -7,6 +8,10 @@ class Company(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     company_name = Column(Text, nullable=False, unique=True)
+    industry_segment = Column(Text)       # cell_manufacturing, materials_mining, recycling, ev_oem, energy_storage, other
+    description = Column(Text)            # extended overview
+    founding_year = Column(Integer)
+    logo_url = Column(Text)
     company_hq_city = Column(Text)
     company_hq_state = Column(Text)
     company_hq_country = Column(Text)
@@ -133,3 +138,98 @@ class ResearchJob(Base):
     result = Column(Text)
     created_at = Column(Text)
     updated_at = Column(Text)
+
+
+class Partnership(Base):
+    __tablename__ = "partnerships"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    partnership_name = Column(Text)
+    partnership_type = Column(Text)       # jv, supply_agreement, licensing, equity_stake, r_and_d_collab, government_grant, other
+    stage = Column(Text)                  # announced, signed, active, dissolved
+    direction = Column(Text)              # supplier_to_buyer, investor_to_investee, bidirectional
+    date_announced = Column(Text)
+    date_effective = Column(Text)
+    date_expiration = Column(Text)
+    deal_value = Column(Float)            # in millions USD
+    deal_currency = Column(Text, default="USD")
+    scope = Column(Text)                  # description of what the partnership covers
+    geography = Column(Text)
+    industry_segment = Column(Text)       # cell_manufacturing, materials_mining, recycling, ev_oem, energy_storage, other
+    source_name = Column(Text)
+    source_url = Column(Text)
+    date_sourced = Column(Text)
+    created_at = Column(Text)
+    updated_at = Column(Text)
+
+    members = relationship("PartnershipMember", back_populates="partnership", cascade="all, delete-orphan")
+
+
+Index("ix_partnership_type", Partnership.partnership_type)
+
+
+class PartnershipMember(Base):
+    __tablename__ = "partnership_members"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    partnership_id = Column(Integer, ForeignKey("partnerships.id", ondelete="CASCADE"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    role = Column(Text)                   # supplier, buyer, investor, investee, partner
+
+    partnership = relationship("Partnership", back_populates="members")
+
+
+Index("ix_pm_partnership", PartnershipMember.partnership_id)
+Index("ix_pm_company", PartnershipMember.company_id)
+
+
+class CompanyFacility(Base):
+    __tablename__ = "company_facilities"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    facility_name = Column(Text)
+    address = Column(Text)
+    city = Column(Text)
+    state = Column(Text)
+    country = Column(Text)
+    zip_code = Column(Text)
+    lat = Column(Float)
+    lng = Column(Float)
+    phone = Column(Text)
+    facility_type = Column(Text)
+    product = Column(Text)
+    product_type = Column(Text)
+    chemistries = Column(Text)
+    feedstock = Column(Text)
+    capacity = Column(Text)
+    capacity_units = Column(Text)
+    status = Column(Text)
+    workforce = Column(Text)
+    segment = Column(Text)
+    sources = Column(Text)
+    qc = Column(Text)
+    qc_date = Column(Text)
+    source_name = Column(Text)            # naatbatt_xlsx, bbd_xlsx, gigafactory_xlsx, etc.
+    source_url = Column(Text)
+    date_added = Column(Text)
+
+
+Index("ix_facility_company", CompanyFacility.company_id)
+
+
+class CompanyMetric(Base):
+    __tablename__ = "company_metrics"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    metric_name = Column(Text, nullable=False)  # market_cap, revenue, manufacturing_capacity_gwh, employee_count, etc.
+    metric_value = Column(Float)
+    metric_unit = Column(Text)
+    date_recorded = Column(Text)
+    source_name = Column(Text)
+    source_url = Column(Text)
+
+
+Index("ix_metric_company", CompanyMetric.company_id)
+Index("ix_metric_name", CompanyMetric.metric_name)

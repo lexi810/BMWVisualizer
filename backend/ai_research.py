@@ -115,6 +115,20 @@ For keywords pick ALL that apply from: solid-state, sodium-ion, lithium metal, a
 For announced_partners include every partnership, JV, investment, supply agreement, or MOU you can find.
 Each partner object must have: partner_name, type_of_partnership (Joint Venture / Investment / MOU / Off-take / Supply Agreement / Other), scale (dollar amount, capacity, or description), date (YYYY or YYYY-MM).
 
+For partnerships, provide detailed structured partnership data.
+Each partnership object must have:
+- partner_name: string
+- partnership_type: one of [jv, supply_agreement, licensing, equity_stake, r_and_d_collab, government_grant, other]
+- stage: one of [announced, signed, active, dissolved]
+- direction: one of [supplier_to_buyer, investor_to_investee, bidirectional]
+- company_role: one of [supplier, buyer, investor, investee, partner]
+- partner_role: one of [supplier, buyer, investor, investee, partner]
+- deal_value_millions_usd: number or null
+- date_announced: string (YYYY or YYYY-MM or YYYY-MM-DD) or null
+- scope: string (description of what the partnership covers)
+- geography: string or null
+- industry_segment: one of [cell_manufacturing, materials_mining, recycling, ev_oem, energy_storage, other] or null
+
 For summary write 3-5 sentences covering: what the company does, their core technology, stage of commercialization, and why they matter to BMW.
 
 Return a JSON object with EXACTLY these fields:
@@ -127,11 +141,13 @@ Return a JSON object with EXACTLY these fields:
   "company_focus": [string],
   "keywords": [string],
   "announced_partners": [{"partner_name": string, "type_of_partnership": string, "scale": string, "date": string}],
+  "partnerships": [{"partner_name": string, "partnership_type": string, "stage": string, "direction": string, "company_role": string, "partner_role": string, "deal_value_millions_usd": number, "date_announced": string, "scope": string, "geography": string, "industry_segment": string}],
   "number_of_employees": integer or null,
   "market_cap_usd": number or null (in millions USD, e.g. 1200.0 means $1.2B),
   "revenue_usd": number or null (in millions USD, annual, most recent),
   "total_funding_usd": number or null (in millions USD, cumulative VC/PE/grants raised),
   "last_fundraise_date": string or null,
+  "founding_year": integer or null,
   "company_website": string or null,
   "summary": string
 }"""
@@ -329,6 +345,92 @@ def discover_companies(segment: str, existing_names: list[str], custom_query: st
     except Exception as e:
         log.error("Claude discover failed: %s", e)
     return []
+
+
+CLASSIFY_PARTNERSHIPS_PROMPT = """You are a battery/energy industry analyst. For each partnership below, infer the type and direction from the company names and any available context.
+
+partnership_type — choose ONE:
+- jv              : Joint venture (new shared entity)
+- supply_agreement: One company supplies materials/products to the other
+- licensing       : Technology or IP licensing
+- equity_stake    : Investment / equity stake
+- r_and_d_collab  : R&D or technology collaboration
+- government_grant: Government funding, grant, or loan
+- other           : Cannot be determined
+
+direction — choose ONE:
+- supplier_to_buyer      : clear supply relationship
+- investor_to_investee   : clear investment relationship
+- bidirectional          : JV, R&D collab, or symmetric deal
+
+Return ONLY a JSON object keyed by the integer partnership ID provided.
+Example: {"12": {"type": "supply_agreement", "direction": "supplier_to_buyer"}, "7": {"type": "equity_stake", "direction": "investor_to_investee"}}"""
+
+
+CLASSIFY_BATCH_PROMPT = """You are a battery/energy industry analyst. Classify each company into our taxonomy based on its description and industry info.
+
+For company_type choose EXACTLY ONE from: start-up, cell supplier, materials supplier, EV OEM, testing partner, prototyping partner, recycler, equipment supplier, R&D, services, modeling/software, other.
+
+Return ONLY a JSON object mapping company name to company_type. No other text.
+Example: {"Tesla": "EV OEM", "CATL": "cell supplier", "Li-Cycle": "recycler", "McKinsey": "services"}"""
+
+
+def classify_companies_batch(companies_info: list[dict]) -> dict[str, str]:
+    """Classify company_type for a batch of companies using Claude.
+
+    Each dict should have keys: 'name', 'description' (optional), 'industry' (optional).
+    Returns {company_name: company_type}.
+    """
+    if not companies_info:
+        return {}
+
+    lines = []
+    for c in companies_info:
+        parts = [f"- {c['name']}"]
+        if c.get('description'):
+            parts.append(f"  Description: {c['description'][:300]}")
+        if c.get('industry'):
+            parts.append(f"  Industry: {c['industry']}")
+        lines.append("\n".join(parts))
+
+    user_msg = "Classify these companies:\n\n" + "\n\n".join(lines)
+
+    try:
+        result = _claude_json(CLASSIFY_BATCH_PROMPT, user_msg)
+        if isinstance(result, dict):
+            log.info("Batch classified %d companies", len(result))
+            return result
+    except Exception as e:
+        log.error("Batch classification failed: %s", e)
+    return {}
+
+
+def classify_partnerships_batch(partnerships_info: list[dict]) -> dict[str, dict]:
+    """Classify partnership_type and direction for a batch of partnerships.
+
+    Each dict should have keys: 'id', 'company_a', 'company_b', 'scope' (optional).
+    Returns {str(id): {type, direction}}.
+    """
+    if not partnerships_info:
+        return {}
+
+    lines = []
+    for p in partnerships_info:
+        parts = [f"- ID {p['id']}: {p['company_a']} <-> {p['company_b']}"]
+        if p.get('scope'):
+            parts.append(f"  Context: {p['scope'][:150]}")
+        lines.append("\n".join(parts))
+
+    user_msg = "Classify these partnerships:\n\n" + "\n\n".join(lines)
+
+    try:
+        result = _claude_json(CLASSIFY_PARTNERSHIPS_PROMPT, user_msg)
+        if isinstance(result, dict):
+            log.info("Batch classified %d partnerships", len(result))
+            return result
+    except Exception as e:
+        log.error("Partnership batch classification failed: %s", e)
+    return {}
 
 
 def extract_from_document(text: str, filename: str) -> dict:

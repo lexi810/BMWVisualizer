@@ -8,8 +8,15 @@ TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./battery_intel.db")
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
 
-NAATBATT_URL = "https://www.nlr.gov/media/docs/libraries/transportation/naatbatt-database-29sep2025.xlsx"
-NAATBATT_LOCAL_PATH = "data/naatbatt_latest.xlsx"
+# Default from NLR “Access the database” page; override if NREL moves the file again.
+NAATBATT_URL = os.getenv(
+    "NAATBATT_URL",
+    "https://www.nrel.gov/media/docs/libraries/transportation/naatbatt-database-31march2026.xlsx",
+)
+NAATBATT_LOCAL_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data", "naatbatt_latest.xlsx",
+)
 
 CLAUDE_MODEL = "claude-sonnet-4-6"
 

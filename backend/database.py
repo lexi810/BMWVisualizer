@@ -42,6 +42,10 @@ def migrate_db():
         ("contact_email", "TEXT"),
         ("contact_phone", "TEXT"),
         ("notes", "TEXT"),
+        ("industry_segment", "TEXT"),
+        ("description", "TEXT"),
+        ("founding_year", "INTEGER"),
+        ("logo_url", "TEXT"),
     ]
     with engine.connect() as conn:
         existing = {row[1] for row in conn.execute(text("PRAGMA table_info(companies)"))}

@@ -2,8 +2,10 @@ import axios from 'axios'
 
 const api = axios.create({ baseURL: '/api' })
 
+// Companies
 export const getCompanies = (params) => api.get('/companies', { params })
 export const getCompany = (id) => api.get(`/companies/${id}`)
+export const getCompanyDetail = (id) => api.get(`/companies/${id}/detail`)
 export const getCompaniesMap = () => api.get('/companies/map')
 export const getCompaniesNetwork = () => api.get('/companies/network')
 export const researchCompany = (company_name) =>
@@ -17,11 +19,25 @@ export const discoverCompanies = (segment, count = 10, custom_query = '') =>
 export const bulkResearch = (company_names) =>
   api.post('/companies/bulk-research', { company_names })
 
+// Partnerships
+export const getPartnerships = (params) => api.get('/partnerships', { params })
+export const getPartnership = (id) => api.get(`/partnerships/${id}`)
+export const createPartnership = (data) => api.post('/partnerships', data)
+export const getPartnershipGraph = () => api.get('/partnerships/graph')
+export const enrichPartnershipNetwork = () => api.post('/partnerships/enrich')
+
+// Facilities & Metrics
+export const getCompanyFacilities = (id) => api.get(`/companies/${id}/facilities`)
+export const getCompanyMetrics = (id) => api.get(`/companies/${id}/metrics`)
+
+// News
 export const getNews = (params) => api.get('/news', { params })
 export const searchNews = (company_name) => api.post('/news/search', { company_name })
 
+// Proceedings
 export const getProceedings = (params) => api.get('/proceedings', { params })
 
+// Uploads
 export const uploadCSV = (file) => {
   const form = new FormData()
   form.append('file', file)
@@ -38,9 +54,11 @@ export const uploadPartnerships = (file) => {
   return api.post('/upload/partnerships', form)
 }
 
+// Jobs
 export const getJob = (id) => api.get(`/jobs/${id}`)
 export const listJobs = () => api.get('/jobs')
 
+// Sync/Seed
 export const getSyncStatus = () => api.get('/sync/status')
 export const triggerSync = () => api.post('/sync/naatbatt')
 export const getSeedStatus = () => api.get('/seed/status')

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db, init_db, migrate_db
 from backend.models import Company, SyncLog
-from backend.routes import companies, jobs, news, proceedings, upload
+from backend.routes import companies, jobs, news, partnerships, proceedings, upload
 from backend.scheduler import get_next_run_time, start_scheduler, stop_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
@@ -38,6 +38,7 @@ app.add_middleware(
 )
 
 app.include_router(companies.router)
+app.include_router(partnerships.router)
 app.include_router(news.router)
 app.include_router(proceedings.router)
 app.include_router(upload.router)
@@ -64,11 +65,13 @@ async def startup():
 
 async def _run_seed(force: bool):
     from backend.database import SessionLocal
-    from backend.seed import import_naatbatt
+    from backend.seed import import_bbd, import_gigafactory, import_naatbatt
 
     db = SessionLocal()
     try:
         await asyncio.get_event_loop().run_in_executor(None, import_naatbatt, db, force)
+        await asyncio.get_event_loop().run_in_executor(None, import_bbd, db)
+        await asyncio.get_event_loop().run_in_executor(None, import_gigafactory, db)
     finally:
         db.close()
 

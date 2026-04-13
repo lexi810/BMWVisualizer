@@ -1,0 +1,795 @@
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import { getCompanyDetail, researchCompany, getJob, chatWithCompany } from '../api/client'
+
+/* ── Logo helper ── */
+function LogoImg({ website, name }) {
+  const [failed, setFailed] = useState(false)
+  let domain = ''
+  try { domain = new URL(website).hostname.replace('www.', '') } catch { return null }
+  if (failed || !domain) return null
+  return (
+    <img
+      src={`https://logo.clearbit.com/${domain}`}
+      alt={name}
+      onError={() => setFailed(true)}
+      className="w-14 h-14 rounded-xl bg-white object-contain p-1.5 shrink-0 shadow-sm"
+    />
+  )
+}
+
+function formatMoney(valueMillion) {
+  if (!valueMillion) return null
+  if (valueMillion >= 1000) return `$${(valueMillion / 1000).toFixed(1)}B`
+  return `$${Math.round(valueMillion)}M`
+}
+
+const PARTNERSHIP_TYPE_COLORS = {
+  jv: '#34D399',
+  supply_agreement: '#F472B6',
+  licensing: '#FBBF24',
+  equity_stake: '#60A5FA',
+  r_and_d_collab: '#A78BFA',
+  government_grant: '#FB923C',
+  other: '#94A3B8',
+}
+
+const PARTNERSHIP_TYPE_LABELS = {
+  jv: 'Joint Venture',
+  supply_agreement: 'Supply Agreement',
+  licensing: 'Licensing',
+  equity_stake: 'Equity Stake',
+  r_and_d_collab: 'R&D Collaboration',
+  government_grant: 'Government Grant',
+  other: 'Other',
+}
+
+const STAGE_COLORS = {
+  announced: 'bg-yellow-100 text-yellow-800',
+  signed: 'bg-blue-100 text-blue-800',
+  active: 'bg-green-100 text-green-800',
+  dissolved: 'bg-red-100 text-red-800',
+}
+
+const CATEGORY_COLORS = {
+  funding: 'bg-green-100 text-green-800',
+  partnership: 'bg-blue-100 text-blue-800',
+  'product launch': 'bg-purple-100 text-purple-800',
+  facility: 'bg-orange-100 text-orange-800',
+  regulatory: 'bg-red-100 text-red-800',
+  research: 'bg-teal-100 text-teal-800',
+  other: 'bg-gray-100 text-gray-700',
+}
+
+/* ── Main Component ── */
+export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, darkMode }) {
+  const [company, setCompany] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [activeSection, setActiveSection] = useState('overview')
+  const [researching, setResearching] = useState(false)
+  const [researchStatus, setResearchStatus] = useState(null)
+  const [chatMessages, setChatMessages] = useState([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const [selectedPartnership, setSelectedPartnership] = useState(null)
+  const chatBottomRef = useRef(null)
+  const pollRef = useRef(null)
+
+  useEffect(() => () => clearInterval(pollRef.current), [])
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages])
+
+  useEffect(() => {
+    if (!companyId) return
+    setLoading(true)
+    setChatMessages([])
+    setSelectedPartnership(null)
+    setActiveSection('overview')
+    getCompanyDetail(companyId)
+      .then(({ data }) => setCompany(data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [companyId])
+
+  async function handleReResearch() {
+    if (!company) return
+    setResearching(true)
+    setResearchStatus('Starting...')
+    try {
+      const { data } = await researchCompany(company.company_name)
+      const jobId = data.job_id
+      pollRef.current = setInterval(async () => {
+        try {
+          const { data: job } = await getJob(jobId)
+          setResearchStatus(`Status: ${job.status}`)
+          if (job.status === 'complete' || job.status === 'failed') {
+            clearInterval(pollRef.current)
+            setResearching(false)
+            if (job.status === 'complete') {
+              const { data: updated } = await getCompanyDetail(companyId)
+              setCompany(updated)
+              setResearchStatus('Research complete!')
+            } else {
+              setResearchStatus('Research failed.')
+            }
+          }
+        } catch (_) {
+          clearInterval(pollRef.current)
+          setResearching(false)
+        }
+      }, 3000)
+    } catch (e) {
+      setResearching(false)
+      setResearchStatus('Error starting research.')
+    }
+  }
+
+  async function handleChatSend() {
+    const msg = chatInput.trim()
+    if (!msg || chatLoading || !company) return
+    setChatInput('')
+    setChatMessages(prev => [...prev, { role: 'user', text: msg }])
+    setChatLoading(true)
+    try {
+      const { data } = await chatWithCompany(company.id, msg)
+      setChatMessages(prev => [...prev, { role: 'assistant', text: data.response }])
+    } catch (e) {
+      setChatMessages(prev => [...prev, { role: 'assistant', text: 'Error getting response.' }])
+    }
+    setChatLoading(false)
+  }
+
+  // Merge partnerships from new table + legacy
+  const allPartnerships = useMemo(() => {
+    if (!company) return []
+    const fromTable = (company.partnerships || []).map(p => ({ ...p, _source: 'table' }))
+    const fromLegacy = (company.partnerships_legacy || []).map((p, i) => ({
+      id: `legacy_${i}`,
+      partnership_name: `${company.company_name} - ${p.partner_name}`,
+      partnership_type: mapLegacyType(p.type_of_partnership),
+      stage: 'active',
+      date_announced: p.date,
+      deal_value: null,
+      scope: p.scale,
+      members: [
+        { company_id: company.id, company_name: company.company_name, role: 'partner' },
+        { company_id: null, company_name: p.partner_name, role: 'partner' },
+      ],
+      _source: 'legacy',
+    }))
+    return [...fromTable, ...fromLegacy]
+  }, [company])
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-gray-400">
+        Loading company details...
+      </div>
+    )
+  }
+
+  if (!company) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-gray-400">
+        Company not found
+      </div>
+    )
+  }
+
+  const sections = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'facilities', label: `Facilities (${(company.facilities || []).length})` },
+    { id: 'partnerships', label: `Partnerships (${allPartnerships.length})` },
+    { id: 'news', label: `News (${(company.news || []).length})` },
+    { id: 'proceedings', label: `Proceedings (${(company.proceedings || []).length})` },
+    { id: 'ai', label: 'AI Chat' },
+    { id: 'similar', label: 'Similar Companies' },
+    { id: 'citations', label: 'Citations' },
+  ]
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* ── Top header ── */}
+      <div className="bg-[#031E49] text-white px-6 py-4">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white text-sm flex items-center gap-1 shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+            Back
+          </button>
+          {company.company_website && (
+            <LogoImg website={company.company_website} name={company.company_name} />
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-bold leading-tight">{company.company_name}</h1>
+            <div className="text-sm text-blue-300 mt-0.5 flex items-center gap-3 flex-wrap">
+              {company.company_type && <span>{company.company_type}</span>}
+              {company.company_status && (
+                <span className="bg-white/10 px-2 py-0.5 rounded text-xs">{company.company_status}</span>
+              )}
+              {company.company_hq_country && <span>{[company.company_hq_city, company.company_hq_state, company.company_hq_country].filter(Boolean).join(', ')}</span>}
+            </div>
+          </div>
+          {/* Key stats in header */}
+          <div className="hidden md:flex items-center gap-6 text-right">
+            {company.market_cap_usd && (
+              <StatPill label="Market Cap" value={formatMoney(company.market_cap_usd)} />
+            )}
+            {company.revenue_usd && (
+              <StatPill label="Revenue" value={formatMoney(company.revenue_usd)} />
+            )}
+            {company.number_of_employees && (
+              <StatPill label="Employees" value={company.number_of_employees.toLocaleString()} />
+            )}
+            {company.total_funding_usd && (
+              <StatPill label="Funding" value={formatMoney(company.total_funding_usd)} />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section tabs ── */}
+      <div className="bg-white border-b border-[#B8CAD1] px-6 flex items-center gap-1 overflow-x-auto">
+        {sections.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setActiveSection(s.id)}
+            className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              activeSection === s.id
+                ? 'text-[#1C69D4] border-[#1C69D4]'
+                : 'text-gray-500 border-transparent hover:text-gray-700'
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Content ── */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-6 py-6">
+
+          {/* OVERVIEW */}
+          {activeSection === 'overview' && (
+            <div className="space-y-6">
+              {/* Stats grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <InfoCard label="HQ" value={[company.company_hq_city, company.company_hq_state, company.company_hq_country].filter(Boolean).join(', ')} />
+                <InfoCard label="Industry Segment" value={company.industry_segment || company.supply_chain_segment} />
+                <InfoCard label="Company Type" value={company.company_type} />
+                <InfoCard label="Status" value={company.company_status} />
+                <InfoCard label="Employees" value={company.number_of_employees?.toLocaleString() || company.employee_size} />
+                <InfoCard label="Market Cap" value={formatMoney(company.market_cap_usd)} />
+                <InfoCard label="Revenue" value={formatMoney(company.revenue_usd)} />
+                <InfoCard label="Total Funding" value={formatMoney(company.total_funding_usd)} />
+                <InfoCard label="Last Fundraise" value={company.last_fundraise_date} />
+                <InfoCard label="Funding Status" value={company.funding_status} />
+                <InfoCard label="Founding Year" value={company.founding_year} />
+                <InfoCard label="Chemistries" value={company.chemistries} />
+                <InfoCard label="Feedstock" value={company.feedstock} />
+                <InfoCard label="Plant Start Date" value={company.plant_start_date} />
+                <InfoCard label="NAATBatt Member" value={company.naatbatt_member ? 'Yes' : 'No'} />
+                <InfoCard label="Volta Member" value={company.volta_member ? 'Yes' : 'No'} />
+                <InfoCard label="Data Source" value={company.data_source} />
+                {company.hq_company && (
+                  <InfoCard label="Parent Company" value={company.hq_company} />
+                )}
+              </div>
+
+              {/* Links */}
+              <div className="flex flex-wrap gap-3">
+                {company.company_website && (
+                  <ExtLink label="Website" url={company.company_website} />
+                )}
+                {company.crunchbase_url && (
+                  <ExtLink label="Crunchbase" url={company.crunchbase_url} />
+                )}
+                {company.linkedin_url && (
+                  <ExtLink label="LinkedIn" url={company.linkedin_url} />
+                )}
+                {company.pitchbook_url && (
+                  <ExtLink label="PitchBook" url={company.pitchbook_url} />
+                )}
+              </div>
+
+              {/* Summary */}
+              {company.summary && (
+                <Section title="Summary">
+                  <p className="text-sm text-gray-700 leading-relaxed">{company.summary}</p>
+                </Section>
+              )}
+
+              {/* Long description */}
+              {company.long_description && (
+                <Section title="Description">
+                  <p className="text-sm text-gray-600 leading-relaxed">{company.long_description}</p>
+                </Section>
+              )}
+
+              {/* Extra description */}
+              {company.extra_description && (
+                <Section title="Additional Profile">
+                  <p className="text-sm text-gray-600 leading-relaxed">{company.extra_description}</p>
+                </Section>
+              )}
+
+              {/* Products */}
+              {company.products && (
+                <Section title="Products">
+                  <p className="text-sm text-gray-600">{company.products}</p>
+                </Section>
+              )}
+              {company.product_services_desc && (
+                <Section title="Product/Services Description">
+                  <p className="text-sm text-gray-600 leading-relaxed">{company.product_services_desc}</p>
+                </Section>
+              )}
+
+              {/* Keywords */}
+              {company.keywords?.length > 0 && (
+                <Section title="Keywords">
+                  <div className="flex flex-wrap gap-1.5">
+                    {company.keywords.map((k) => (
+                      <span key={k} className="bg-[#F0F4F8] border border-[#B8CAD1] text-xs px-2.5 py-1 rounded-full">{k}</span>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Battery Chemistry Flags */}
+              {company.battery_chemistry_flags && Object.keys(company.battery_chemistry_flags).length > 0 && (
+                <Section title="Battery Chemistries">
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(company.battery_chemistry_flags).filter(([, v]) => v).map(([k]) => (
+                      <span key={k} className="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full">{k}</span>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Supply Chain Flags */}
+              {company.supply_chain_flags && Object.keys(company.supply_chain_flags).length > 0 && (
+                <Section title="Supply Chain Segments">
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(company.supply_chain_flags).filter(([, v]) => v).map(([k]) => (
+                      <span key={k} className="bg-green-50 text-green-700 text-xs px-2.5 py-1 rounded-full">{k}</span>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* GWh Capacity */}
+              {company.gwh_capacity && Object.keys(company.gwh_capacity).length > 0 && (
+                <Section title="Manufacturing Capacity (GWh)">
+                  <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                    {Object.entries(company.gwh_capacity).sort(([a], [b]) => a.localeCompare(b)).map(([year, val]) => (
+                      <div key={year} className="bg-[#F0F4F8] rounded p-2 text-center">
+                        <div className="text-xs text-gray-500">{year}</div>
+                        <div className="text-sm font-semibold text-[#031E49]">{val}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Contact */}
+              {(company.contact_name || company.contact_email || company.contact_phone) && (
+                <Section title="Contact">
+                  <div className="bg-[#F0F4F8] rounded-lg p-4 space-y-1">
+                    {company.contact_name && <div className="text-sm font-medium text-[#031E49]">{company.contact_name}</div>}
+                    {company.contact_email && <a href={`mailto:${company.contact_email}`} className="text-sm text-[#4599FE] hover:underline block">{company.contact_email}</a>}
+                    {company.contact_email2 && <a href={`mailto:${company.contact_email2}`} className="text-sm text-[#4599FE] hover:underline block">{company.contact_email2}</a>}
+                    {company.contact_phone && <div className="text-sm text-gray-500">{company.contact_phone}</div>}
+                  </div>
+                </Section>
+              )}
+
+              {/* Notes */}
+              {company.notes && (
+                <Section title="Notes">
+                  <p className="text-sm text-gray-600 leading-relaxed">{company.notes}</p>
+                </Section>
+              )}
+
+              {/* Metrics from metrics table */}
+              {company.metrics?.length > 0 && (
+                <Section title="Additional Metrics">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {company.metrics.map((m, i) => (
+                      <div key={i} className="bg-[#F0F4F8] rounded p-3">
+                        <div className="text-xs text-gray-500 uppercase">{m.metric_name.replace(/_/g, ' ')}</div>
+                        <div className="text-sm font-semibold text-[#031E49] mt-0.5">
+                          {m.metric_value?.toLocaleString()} {m.metric_unit || ''}
+                        </div>
+                        {m.date_recorded && <div className="text-xs text-gray-400 mt-0.5">{m.date_recorded}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+            </div>
+          )}
+
+          {/* FACILITIES */}
+          {activeSection === 'facilities' && (
+            <div className="space-y-3">
+              {(company.facilities || []).length === 0 ? (
+                <EmptyState text="No facility data available" />
+              ) : (
+                company.facilities.map((f, i) => (
+                  <div key={f.id || i} className="bg-white border border-[#B8CAD1] rounded-lg p-4 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        {f.facility_name && <div className="font-medium text-[#031E49]">{f.facility_name}</div>}
+                        <div className="text-sm text-gray-500 mt-0.5">
+                          {[f.address, f.city, f.state, f.country, f.zip_code].filter(Boolean).join(', ')}
+                        </div>
+                      </div>
+                      {f.status && (
+                        <span className="text-xs bg-[#F0F4F8] px-2 py-0.5 rounded">{f.status}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-600">
+                      {f.product_type && <span><b>Type:</b> {f.product_type}</span>}
+                      {f.product && <span><b>Product:</b> {f.product}</span>}
+                      {f.chemistries && <span><b>Chemistries:</b> {f.chemistries}</span>}
+                      {f.feedstock && <span><b>Feedstock:</b> {f.feedstock}</span>}
+                      {f.capacity && <span><b>Capacity:</b> {f.capacity} {f.capacity_units || ''}</span>}
+                      {f.workforce && <span><b>Workforce:</b> {f.workforce}</span>}
+                      {f.segment && <span><b>Segment:</b> {f.segment}</span>}
+                      {f.phone && <span><b>Phone:</b> {f.phone}</span>}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-gray-400">
+                      {f.source_name && <span>Source: {f.source_name}</span>}
+                      {f.date_added && <span>Added: {f.date_added.split('T')[0]}</span>}
+                      {f.qc && <span>QC: {f.qc} {f.qc_date || ''}</span>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* PARTNERSHIPS */}
+          {activeSection === 'partnerships' && (
+            <div className="space-y-3">
+              {allPartnerships.length === 0 ? (
+                <EmptyState text="No partnership data available" />
+              ) : (
+                allPartnerships.map((p) => (
+                  <div
+                    key={p.id}
+                    className="bg-white border border-[#B8CAD1] rounded-lg p-4 cursor-pointer hover:border-[#4599FE] transition-colors"
+                    onClick={() => setSelectedPartnership(selectedPartnership?.id === p.id ? null : p)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: PARTNERSHIP_TYPE_COLORS[p.partnership_type] || '#94A3B8' }}
+                        />
+                        <div>
+                          <div className="font-medium text-[#031E49] text-sm">{p.partnership_name || 'Partnership'}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {PARTNERSHIP_TYPE_LABELS[p.partnership_type] || p.partnership_type}
+                            {p.date_announced && ` -- ${p.date_announced}`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {p.deal_value && (
+                          <span className="text-xs font-medium text-[#031E49]">{formatMoney(p.deal_value)}</span>
+                        )}
+                        {p.stage && (
+                          <span className={`text-xs px-2 py-0.5 rounded ${STAGE_COLORS[p.stage] || 'bg-gray-100 text-gray-700'}`}>
+                            {p.stage}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Members */}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {(p.members || []).map((m, i) => (
+                        <span
+                          key={i}
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            m.company_id === company.id
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'bg-gray-100 text-gray-600 cursor-pointer hover:bg-gray-200'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (m.company_id && m.company_id !== company.id && onOpenCompany) {
+                              onOpenCompany(m.company_id)
+                            }
+                          }}
+                        >
+                          {m.company_name} ({m.role})
+                        </span>
+                      ))}
+                    </div>
+                    {/* Expanded detail on click */}
+                    {selectedPartnership?.id === p.id && (
+                      <div className="mt-3 pt-3 border-t border-[#B8CAD1] space-y-2 text-sm">
+                        {p.scope && <div><b className="text-gray-500">Scope:</b> {p.scope}</div>}
+                        {p.geography && <div><b className="text-gray-500">Geography:</b> {p.geography}</div>}
+                        {p.direction && <div><b className="text-gray-500">Direction:</b> {p.direction.replace(/_/g, ' ')}</div>}
+                        {p.date_effective && <div><b className="text-gray-500">Effective:</b> {p.date_effective}</div>}
+                        {p.date_expiration && <div><b className="text-gray-500">Expiration:</b> {p.date_expiration}</div>}
+                        {p.source_name && <div><b className="text-gray-500">Source:</b> {p.source_name}</div>}
+                        {p.source_url && (
+                          <a href={p.source_url} target="_blank" rel="noreferrer" className="text-[#4599FE] hover:underline text-xs">
+                            View source
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* NEWS */}
+          {activeSection === 'news' && (
+            <div className="space-y-3">
+              {(company.news || []).length === 0 ? (
+                <EmptyState text="No news articles available" />
+              ) : (
+                company.news.map((n) => (
+                  <div key={n.id} className="bg-white border border-[#B8CAD1] rounded-lg p-4">
+                    <div className="font-medium text-[#031E49] text-sm">{n.news_headline}</div>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${CATEGORY_COLORS[n.category] || CATEGORY_COLORS.other}`}>
+                        {n.category}
+                      </span>
+                      <span className="text-gray-400 text-xs">{n.date_of_article}</span>
+                      {n.news_source && <span className="text-gray-400 text-xs">{n.news_source}</span>}
+                      {n.url && (
+                        <a href={n.url} target="_blank" rel="noreferrer" className="text-[#4599FE] text-xs hover:underline">
+                          Source
+                        </a>
+                      )}
+                    </div>
+                    {n.summary && <p className="text-sm text-gray-600 mt-2 leading-relaxed">{n.summary}</p>}
+                    {n.topics?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {n.topics.map((t, i) => (
+                          <span key={i} className="text-[10px] bg-[#F0F4F8] px-1.5 py-0.5 rounded">{t}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* PROCEEDINGS */}
+          {activeSection === 'proceedings' && (
+            <div className="space-y-3">
+              {(company.proceedings || []).length === 0 ? (
+                <EmptyState text="No conference proceedings available" />
+              ) : (
+                company.proceedings.map((p) => (
+                  <div key={p.id} className="bg-white border border-[#B8CAD1] rounded-lg p-4">
+                    <div className="font-medium text-[#031E49] text-sm">{p.title}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {p.event_name && <span>{p.event_name}</span>}
+                      {p.event_date && <span> -- {p.event_date}</span>}
+                      {p.location && <span> -- {p.location}</span>}
+                    </div>
+                    {p.authors?.length > 0 && (
+                      <div className="text-xs text-gray-400 mt-1">Authors: {p.authors.join(', ')}</div>
+                    )}
+                    {p.results_summary && <p className="text-sm text-gray-600 mt-2">{p.results_summary}</p>}
+                    {p.technologies?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {p.technologies.map((t, i) => (
+                          <span key={i} className="text-[10px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded">{t}</span>
+                        ))}
+                      </div>
+                    )}
+                    {p.source_url && (
+                      <a href={p.source_url} target="_blank" rel="noreferrer" className="text-[#4599FE] text-xs hover:underline mt-1 inline-block">
+                        View source
+                      </a>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* AI CHAT */}
+          {activeSection === 'ai' && (
+            <div className="space-y-4 max-w-2xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-gray-500 uppercase">Ask AI about {company.company_name}</h3>
+                <button
+                  onClick={handleReResearch}
+                  disabled={researching}
+                  className="text-xs bg-[#031E49] hover:bg-[#0D2A5E] disabled:opacity-60 text-white px-4 py-1.5 rounded transition-colors"
+                >
+                  {researching ? 'Researching...' : 'Full re-research'}
+                </button>
+              </div>
+              {researchStatus && <div className="text-xs text-gray-500">{researchStatus}</div>}
+
+              {chatMessages.length > 0 && (
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                  {chatMessages.map((m, i) => (
+                    <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] rounded-lg px-4 py-2.5 text-sm whitespace-pre-wrap leading-relaxed ${
+                        m.role === 'user'
+                          ? 'bg-[#4599FE] text-white'
+                          : 'bg-[#F0F4F8] text-gray-800 border border-[#B8CAD1]'
+                      }`}>
+                        {m.text}
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-[#F0F4F8] border border-[#B8CAD1] rounded-lg px-4 py-2.5 text-sm text-gray-400 animate-pulse">
+                        Thinking...
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chatBottomRef} />
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder={`Ask about ${company.company_name}...`}
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                  disabled={chatLoading}
+                  className="flex-1 border border-[#B8CAD1] rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4599FE] disabled:opacity-60"
+                />
+                <button
+                  onClick={handleChatSend}
+                  disabled={chatLoading || !chatInput.trim()}
+                  className="bg-[#4599FE] hover:bg-[#3a88ee] disabled:opacity-60 text-white px-5 py-2 rounded text-sm font-medium transition-colors"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* SIMILAR COMPANIES */}
+          {activeSection === 'similar' && (
+            <div className="space-y-3">
+              {(company.similar_companies || []).length === 0 ? (
+                <EmptyState text="No similar companies found" />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {company.similar_companies.map((sc) => (
+                    <div
+                      key={sc.id}
+                      onClick={() => onOpenCompany && onOpenCompany(sc.id)}
+                      className="bg-white border border-[#B8CAD1] rounded-lg p-4 cursor-pointer hover:border-[#4599FE] hover:shadow-sm transition-all"
+                    >
+                      <div className="font-medium text-[#1A5FAD] text-sm">{sc.company_name}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {sc.company_type && <span>{sc.company_type}</span>}
+                        {sc.company_hq_country && <span> -- {sc.company_hq_country}</span>}
+                      </div>
+                      {sc.industry_segment && (
+                        <span className="text-[10px] bg-[#F0F4F8] px-1.5 py-0.5 rounded mt-1.5 inline-block">{sc.industry_segment}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CITATIONS */}
+          {activeSection === 'citations' && (
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500 mb-4">
+                All data sources used to compile this company's information:
+              </p>
+              {(company.citations || []).length === 0 ? (
+                <EmptyState text="No citation data available" />
+              ) : (
+                <div className="space-y-2">
+                  {company.citations.map((c, i) => (
+                    <div key={i} className="bg-white border border-[#B8CAD1] rounded-lg px-4 py-3 flex items-center justify-between">
+                      <span className="text-sm text-[#031E49]">{c.source_name}</span>
+                      {c.source_url ? (
+                        <a href={c.source_url} target="_blank" rel="noreferrer" className="text-[#4599FE] text-sm hover:underline">
+                          {c.source_url}
+                        </a>
+                      ) : (
+                        <span className="text-xs text-gray-400">No URL available</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Helper components ── */
+
+function StatPill({ label, value }) {
+  if (!value) return null
+  return (
+    <div>
+      <div className="text-[10px] text-blue-300 uppercase tracking-wider">{label}</div>
+      <div className="text-white font-semibold text-sm">{value}</div>
+    </div>
+  )
+}
+
+function InfoCard({ label, value }) {
+  if (!value) return null
+  return (
+    <div className="bg-[#F0F4F8] rounded-lg p-3">
+      <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{label}</div>
+      <div className="text-sm text-[#031E49] mt-0.5 font-medium">{value}</div>
+    </div>
+  )
+}
+
+function Section({ title, children }) {
+  return (
+    <div>
+      <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{title}</h3>
+      {children}
+    </div>
+  )
+}
+
+function ExtLink({ label, url }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1.5 text-xs text-[#4599FE] hover:underline bg-blue-50 px-3 py-1.5 rounded-full"
+    >
+      {label}
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+      </svg>
+    </a>
+  )
+}
+
+function EmptyState({ text }) {
+  return (
+    <div className="text-center text-gray-400 py-12">
+      <div className="text-lg">{text}</div>
+      <div className="text-sm mt-1">Run AI research to populate this section</div>
+    </div>
+  )
+}
+
+function mapLegacyType(legacy) {
+  const mapping = {
+    'Joint Venture': 'jv',
+    'Investment': 'equity_stake',
+    'MOU': 'r_and_d_collab',
+    'Off-take': 'supply_agreement',
+    'Supply Agreement': 'supply_agreement',
+    'Other': 'other',
+  }
+  return mapping[legacy] || 'other'
+}

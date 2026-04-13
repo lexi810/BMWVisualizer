@@ -15,6 +15,31 @@ body {
 }
 
 /* ═══════════════════════════════════════
+   Heatmap cluster styles
+   ═══════════════════════════════════════ */
+.heatmap-cluster-icon {
+  background: transparent !important;
+  border: none !important;
+}
+.heatmap-zone {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  animation: heat-pulse 3s ease-in-out infinite;
+}
+@keyframes heat-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+.heatmap-dot-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* ═══════════════════════════════════════
    Dark mode overrides
    Toggle by adding class="dark" on <html>
    ═══════════════════════════════════════ */

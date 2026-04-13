@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from backend.config import UPLOAD_DIR
 from backend.database import get_db
-from backend.models import Company, ConferenceProceeding, NewsHeadline, ResearchJob
+from backend.models import Company, ConferenceProceeding, NewsHeadline, Partnership, PartnershipMember, ResearchJob
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/upload", tags=["upload"])
@@ -321,9 +321,158 @@ def _add_partner(company: Company, partner_name: str, ptype: str, scale: str | N
     company.announced_partners = json.dumps(existing)
 
 
+LEGACY_TO_NEW_TYPE = {
+    'Joint Venture': 'jv',
+    'Investment': 'equity_stake',
+    'MOU': 'r_and_d_collab',
+    'Off-take': 'supply_agreement',
+    'Supply Agreement': 'supply_agreement',
+    'Other': 'other',
+}
+
+DIRECTION_FOR_TYPE = {
+    'equity_stake': 'investor_to_investee',
+    'supply_agreement': 'supplier_to_buyer',
+    'jv': 'bidirectional',
+    'r_and_d_collab': 'bidirectional',
+    'other': 'bidirectional',
+}
+
+
+def _create_partnership_record(
+    db, company: Company, partner_name: str, legacy_type: str,
+    scale: str | None, date: str | None, source: str, ts: str,
+):
+    """Create a Partnership + PartnershipMember record in the new normalized tables."""
+    new_type = LEGACY_TO_NEW_TYPE.get(legacy_type, 'other')
+    direction = DIRECTION_FOR_TYPE.get(new_type, 'bidirectional')
+
+    # Look up or create the partner company
+    partner = db.query(Company).filter(Company.company_name.ilike(partner_name)).first()
+    if not partner:
+        partner = Company(company_name=partner_name, data_source=source, last_updated=ts)
+        db.add(partner)
+        db.flush()
+
+    # Check for duplicate partnership
+    existing = (
+        db.query(Partnership)
+        .join(PartnershipMember)
+        .filter(
+            Partnership.partnership_type == new_type,
+            PartnershipMember.company_id.in_([company.id, partner.id]),
+        )
+        .all()
+    )
+    for ep in existing:
+        member_ids = {m.company_id for m in ep.members}
+        if company.id in member_ids and partner.id in member_ids:
+            return  # Already exists
+
+    deal_value = None
+    if scale:
+        try:
+            cleaned = scale.replace('$', '').replace(',', '').strip()
+            if cleaned.upper().endswith('B'):
+                deal_value = float(cleaned[:-1]) * 1000
+            elif cleaned.upper().endswith('M'):
+                deal_value = float(cleaned[:-1])
+        except (ValueError, TypeError):
+            pass
+
+    p = Partnership(
+        partnership_name=f"{company.company_name} - {partner_name}",
+        partnership_type=new_type,
+        stage="active",
+        direction=direction,
+        date_announced=date,
+        deal_value=deal_value,
+        scope=scale,
+        source_name=source,
+        date_sourced=ts,
+        created_at=ts,
+        updated_at=ts,
+    )
+    db.add(p)
+    db.flush()
+
+    # Determine roles
+    if direction == 'investor_to_investee':
+        db.add(PartnershipMember(partnership_id=p.id, company_id=partner.id, role='investor'))
+        db.add(PartnershipMember(partnership_id=p.id, company_id=company.id, role='investee'))
+    elif direction == 'supplier_to_buyer':
+        db.add(PartnershipMember(partnership_id=p.id, company_id=partner.id, role='supplier'))
+        db.add(PartnershipMember(partnership_id=p.id, company_id=company.id, role='buyer'))
+    else:
+        db.add(PartnershipMember(partnership_id=p.id, company_id=company.id, role='partner'))
+        db.add(PartnershipMember(partnership_id=p.id, company_id=partner.id, role='partner'))
+
+
 def _has_col(cols: set, *keywords) -> bool:
     cols_lower = {c.lower() for c in cols}
     return any(any(kw in c for c in cols_lower) for kw in keywords)
+
+
+def _clean_company_name(name: str) -> str:
+    """Strip stock ticker suffixes like '(NAS: TSLA)' from PitchBook company names."""
+    if not name:
+        return name
+    return re.sub(r'\s*\([A-Z]{2,5}:\s*[A-Z0-9.]+\)\s*$', '', name).strip()
+
+
+def _clean_hyperlink(val: str) -> str:
+    """Extract URL from Excel =HYPERLINK() formula."""
+    if not val:
+        return val
+    m = re.match(r'=HYPERLINK\("([^"]+)"', str(val))
+    return m.group(1) if m else str(val)
+
+
+INDEPENDENT_INVESTORS_NAME = 'Independent Investors'
+
+COMPANY_WORDS = frozenset({
+    'inc', 'llc', 'corp', 'corporation', 'ltd', 'plc', 'sa', 'ag', 'gmbh', 'co',
+    'capital', 'ventures', 'partners', 'group', 'holdings', 'management',
+    'fund', 'advisors', 'investments', 'associates', 'bank', 'financial',
+    'energy', 'technologies', 'technology', 'motors', 'industries',
+    'enterprises', 'commission', 'platform', 'cloud', 'solutions',
+    'services', 'systems', 'labs', 'laboratories', 'institute',
+    'university', 'foundation', 'company', 'global', 'network',
+})
+
+
+def _is_individual_investor(raw_name: str) -> tuple[bool, str]:
+    """Detect individual (person) investors. Returns (is_individual, clean_name).
+
+    Conservative — only catches clear cases to avoid grouping real companies.
+    """
+    stripped = raw_name.strip()
+
+    # Definite: "Bill Lee(Bill Lee)" — person name repeated in parens
+    m = re.match(r'^(.+?)\(\1\)$', stripped)
+    if m:
+        return True, m.group(1).strip()
+
+    # Has stock ticker → definitely a company
+    if re.search(r'\([A-Z]{2,5}:\s*[A-Z0-9.]+\)', stripped):
+        return False, stripped
+
+    # Has parenthetical (like "Firm(Person)") → treat as company
+    if '(' in stripped:
+        return False, stripped
+
+    # Simple 2-word name with no company indicators → likely a person
+    words = stripped.split()
+    if len(words) != 2:
+        return False, stripped
+
+    if {w.lower() for w in words} & COMPANY_WORDS:
+        return False, stripped
+
+    if all(w[0].isupper() and w.isalpha() for w in words):
+        return True, stripped
+
+    return False, stripped
 
 
 DEAL_TYPE_MAP = {
@@ -386,26 +535,31 @@ def _detect_format(cols: set) -> str | None:
 def _import_pitchbook_companies(df: pd.DataFrame, db, ts: str) -> dict:
     added = updated = 0
     for _, row in df.iterrows():
-        name = _col(row, 'Company Name', 'Company')
+        name = _col(row, 'Company Name', 'Company', 'Companies')
         if not name:
             continue
+        name = _clean_company_name(name)
         hq_raw = _col(row, 'HQ Location', 'Headquarters Location', 'Location', 'HQ')
         city, state, country = _parse_hq(hq_raw) if hq_raw else (None, None, None)
-        city = _col(row, 'HQ City', 'City') or city
-        state = _col(row, 'HQ State', 'State', 'Region') or state
-        country = _col(row, 'HQ Country', 'Country') or country
+        city = _col(row, 'Company City', 'HQ City', 'City') or city
+        state = _col(row, 'Company State/Province', 'HQ State', 'State', 'Region') or state
+        country = _col(row, 'Company Country/Territory/Region', 'HQ Country', 'Country') or country
+
+        website = _col(row, 'Company Website', 'Website', 'URL')
+        if website:
+            website = _clean_hyperlink(website)
 
         existed = db.query(Company).filter(Company.company_name.ilike(name)).first() is not None
         _upsert_company(db, name, {
             'company_hq_city': city,
             'company_hq_state': state,
             'company_hq_country': country,
-            'summary': _col(row, 'Business Description', 'Description', 'Company Description'),
-            'company_website': _col(row, 'Website', 'Company Website', 'URL'),
+            'summary': _col(row, 'Description', 'Business Description', 'Company Description'),
+            'company_website': website,
             'last_fundraise_date': _col(row, 'Last Financing Date', 'Last Funding Date'),
-            'total_funding_usd': _parse_money_millions(_col(row, 'Total Raised (USD)', 'Total Capital Raised (USD)', 'Total Raised', 'Total Funding')),
-            'market_cap_usd': _parse_money_millions(_col(row, 'Post-Money Valuation (USD)', 'Post Money Valuation', 'Valuation')),
-            'number_of_employees': _parse_employees(_col(row, 'Number of Employees', 'Employees', 'Employee Count')),
+            'total_funding_usd': _parse_money_millions(_col(row, 'Total Raised (USD)', 'Total Capital Raised (USD)', 'Total Raised', 'Total Funding', 'Raised to Date')),
+            'market_cap_usd': _parse_money_millions(_col(row, 'Post-Money Valuation (USD)', 'Post Money Valuation', 'Post Valuation', 'Valuation')),
+            'number_of_employees': _parse_employees(_col(row, 'Current Employees', 'Number of Employees', 'Employees', 'Employee Count')),
             'data_source': 'pitchbook',
         }, ts)
         if existed:
@@ -419,28 +573,79 @@ def _import_pitchbook_companies(df: pd.DataFrame, db, ts: str) -> dict:
 
 def _import_pitchbook_deals(df: pd.DataFrame, db, ts: str) -> dict:
     companies_added = partnerships = 0
+    individuals_grouped = 0
+
     for _, row in df.iterrows():
-        name = _col(row, 'Company Name', 'Company')
+        name = _col(row, 'Company Name', 'Company', 'Companies')
         if not name:
             continue
-        ptype = _map_deal_type(_col(row, 'Deal Type', 'Round'))
+        name = _clean_company_name(name)
+
+        ptype = _map_deal_type(_col(row, 'Deal Type', 'Deal Type 2', 'Round'))
         date = _col(row, 'Deal Date', 'Close Date', 'Announced Date')
         scale = _scale_label(_parse_money_millions(_col(row, 'Deal Size (USD)', 'Deal Size', 'Amount (USD)', 'Amount')))
 
+        # Parse HQ from the rich "All Columns" export
+        hq_raw = _col(row, 'HQ Location', 'Headquarters Location')
+        city, state, country = _parse_hq(hq_raw) if hq_raw else (None, None, None)
+        city = _col(row, 'Company City', 'HQ City', 'City') or city
+        state = _col(row, 'Company State/Province', 'HQ State', 'State') or state
+        country = _col(row, 'Company Country/Territory/Region', 'HQ Country', 'Country') or country
+
+        website = _col(row, 'Company Website', 'Website', 'URL')
+        if website:
+            website = _clean_hyperlink(website)
+
+        # Collect PitchBook industry info for later AI classification
+        pb_industry = ' / '.join(filter(None, [
+            _col(row, 'Primary PitchBook Industry Sector'),
+            _col(row, 'Primary PitchBook Industry Group'),
+            _col(row, 'Primary PitchBook Industry Code'),
+        ]))
+
         existed = db.query(Company).filter(Company.company_name.ilike(name)).first() is not None
-        company = _upsert_company(db, name, {'data_source': 'pitchbook'}, ts)
+        company = _upsert_company(db, name, {
+            'company_hq_city': city,
+            'company_hq_state': state,
+            'company_hq_country': country,
+            'summary': _col(row, 'Description', 'Business Description', 'Company Description'),
+            'company_website': website,
+            'number_of_employees': _parse_employees(_col(row, 'Current Employees', 'Employees', 'Number of Employees')),
+            'data_source': 'pitchbook',
+            # Stash PitchBook industry for the AI enrichment pass
+            'notes': pb_industry or None,
+        }, ts)
         if not existed:
             companies_added += 1
 
         if date and not company.last_fundraise_date:
             company.last_fundraise_date = date
 
-        investors_raw = _col(row, 'Investors', 'Lead Investors', 'Investor(s)', 'All Investors')
+        investors_raw = _col(row, 'Investors', 'Lead/Sole Investors', 'Lead Investors', 'Investor(s)', 'All Investors')
         if investors_raw:
-            for investor in _split_investors(investors_raw):
-                _add_partner(company, investor, ptype, scale, date)
+            for raw_investor in _split_investors(investors_raw):
+                investor = _clean_company_name(raw_investor)
+                is_individual, person_name = _is_individual_investor(raw_investor)
+
+                if is_individual:
+                    # Group under a single "Independent Investors" entity
+                    investor_label = INDEPENDENT_INVESTORS_NAME
+                    scale_with_name = f"{person_name}" + (f" — {scale}" if scale else "")
+                    _add_partner(company, investor_label, ptype, scale_with_name, date)
+                    _create_partnership_record(
+                        db, company, investor_label, ptype, scale_with_name, date, 'pitchbook', ts,
+                    )
+                    individuals_grouped += 1
+                else:
+                    _add_partner(company, investor, ptype, scale, date)
+                    _create_partnership_record(db, company, investor, ptype, scale, date, 'pitchbook', ts)
                 partnerships += 1
-    return {'companies_added': companies_added, 'companies_updated': 0, 'partnerships_added': partnerships}
+
+    log.info("PitchBook deals: %d individuals grouped under '%s'", individuals_grouped, INDEPENDENT_INVESTORS_NAME)
+    return {
+        'companies_added': companies_added, 'companies_updated': 0,
+        'partnerships_added': partnerships, 'individuals_grouped': individuals_grouped,
+    }
 
 
 # ── Crunchbase organizations ──────────────────────────────────────────────────
@@ -500,6 +705,7 @@ def _import_crunchbase_rounds(df: pd.DataFrame, db, ts: str) -> dict:
                 investors.update(_split_investors(raw))
         for investor in investors:
             _add_partner(company, investor, ptype, scale, date)
+            _create_partnership_record(db, company, investor, ptype, scale, date, 'crunchbase', ts)
             partnerships += 1
     return {'companies_added': companies_added, 'companies_updated': 0, 'partnerships_added': partnerships}
 
@@ -517,6 +723,22 @@ async def upload_partnerships(file: UploadFile = File(...), db: Session = Depend
 
     df.columns = [str(c).strip() for c in df.columns]
     fmt = _detect_format(set(df.columns))
+
+    # PitchBook XLSX exports often have metadata rows before the real header.
+    # If format wasn't detected, scan rows 1-14 for the actual header row.
+    if not fmt and file.filename.endswith(".xlsx"):
+        for header_row in range(1, 15):
+            try:
+                df2 = pd.read_excel(path, header=header_row, dtype=str)
+                df2.columns = [str(c).strip() for c in df2.columns]
+                fmt2 = _detect_format(set(df2.columns))
+                if fmt2:
+                    df, fmt = df2, fmt2
+                    log.info("Detected header at row %d (format: %s)", header_row, fmt)
+                    break
+            except Exception:
+                continue
+
     if not fmt:
         raise HTTPException(
             400,
@@ -535,6 +757,21 @@ async def upload_partnerships(file: UploadFile = File(...), db: Session = Depend
     result = IMPORTERS[fmt](df, db, ts)
     db.commit()
 
+    # Kick off background AI enrichment for companies missing company_type
+    enrich_job = ResearchJob(
+        job_type="pitchbook_enrich",
+        status="pending",
+        target=file.filename,
+        created_at=ts,
+        updated_at=ts,
+    )
+    db.add(enrich_job)
+    db.commit()
+    db.refresh(enrich_job)
+    enrich_job_id = enrich_job.id
+
+    asyncio.create_task(_enrich_companies_bg(enrich_job_id, ts))
+
     SOURCE_LABELS = {
         'pitchbook_companies': 'PitchBook — Company List',
         'pitchbook_deals': 'PitchBook — Deals',
@@ -542,4 +779,103 @@ async def upload_partnerships(file: UploadFile = File(...), db: Session = Depend
         'crunchbase_rounds': 'Crunchbase — Funding Rounds',
     }
     log.info("Partnership import (%s): %s", fmt, result)
-    return {"source": SOURCE_LABELS[fmt], "format": fmt, **result, "filename": file.filename}
+    return {
+        "source": SOURCE_LABELS[fmt], "format": fmt,
+        **result, "filename": file.filename,
+        "enrich_job_id": enrich_job_id,
+    }
+
+
+# ── Background AI enrichment ────────────────────────────────────────────────
+
+BATCH_SIZE = 20  # companies per Claude call
+
+
+async def _enrich_companies_bg(job_id: int, ts: str):
+    """Background task: classify company_type for companies missing it."""
+    from backend.ai_research import classify_companies_batch
+    from backend.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+        if job:
+            job.status = "running"
+            job.updated_at = datetime.now(timezone.utc).isoformat()
+            db.commit()
+
+        # Find ALL companies that lack a company_type (any source)
+        candidates = (
+            db.query(Company)
+            .filter(
+                (Company.company_type == None) | (Company.company_type == ''),  # noqa: E711
+                Company.company_name != INDEPENDENT_INVESTORS_NAME,
+            )
+            .all()
+        )
+
+        if not candidates:
+            log.info("Enrich job %d: no companies need classification", job_id)
+            job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+            if job:
+                job.status = "complete"
+                job.result = json.dumps({"classified": 0})
+                job.updated_at = datetime.now(timezone.utc).isoformat()
+                db.commit()
+            return
+
+        log.info("Enrich job %d: classifying %d companies", job_id, len(candidates))
+        classified_total = 0
+
+        # Process in batches
+        for i in range(0, len(candidates), BATCH_SIZE):
+            batch = candidates[i:i + BATCH_SIZE]
+            info = []
+            for c in batch:
+                entry = {'name': c.company_name}
+                # Use summary or description for context
+                desc = c.summary or c.long_description or c.description or ''
+                if desc:
+                    entry['description'] = desc
+                # Use notes field where we stashed PitchBook industry info
+                if c.notes:
+                    entry['industry'] = c.notes
+                info.append(entry)
+
+            try:
+                results = await asyncio.get_event_loop().run_in_executor(
+                    None, classify_companies_batch, info,
+                )
+            except Exception as e:
+                log.error("Enrich batch %d failed: %s", i, e)
+                continue
+
+            for c in batch:
+                ctype = results.get(c.company_name)
+                if ctype:
+                    c.company_type = ctype
+                    classified_total += 1
+
+            db.commit()
+            log.info("Enrich job %d: classified batch %d-%d (%d hits)",
+                     job_id, i, i + len(batch), sum(1 for c in batch if results.get(c.company_name)))
+
+        job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+        if job:
+            job.status = "complete"
+            job.result = json.dumps({"classified": classified_total, "total_candidates": len(candidates)})
+            job.updated_at = datetime.now(timezone.utc).isoformat()
+            db.commit()
+
+        log.info("Enrich job %d complete: classified %d / %d companies", job_id, classified_total, len(candidates))
+
+    except Exception as e:
+        log.error("Enrich job %d failed: %s", job_id, e)
+        job = db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
+        if job:
+            job.status = "failed"
+            job.result = str(e)
+            job.updated_at = datetime.now(timezone.utc).isoformat()
+            db.commit()
+    finally:
+        db.close()

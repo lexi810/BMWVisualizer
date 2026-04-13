@@ -7,7 +7,7 @@ import NewsFeed from './components/NewsFeed'
 import PartnershipNetwork from './components/PartnershipNetwork'
 import ResearchPanel from './components/ResearchPanel'
 import Proceedings from './components/Proceedings'
-import CompanyDetail from './components/CompanyDetail'
+import CompanyDetailPage from './components/CompanyDetailPage'
 import { getSeedStatus, triggerSeed } from './api/client'
 
 export default function App() {
@@ -18,6 +18,8 @@ export default function App() {
   const [highlightCompany, setHighlightCompany] = useState(null)
   const [seeding, setSeeding] = useState(false)
   const [seedBanner, setSeedBanner] = useState(false)
+  // Company detail full page view
+  const [detailCompanyId, setDetailCompanyId] = useState(null)
   const seedPollRef = useRef(null)
 
   // Dark mode — persisted in localStorage
@@ -61,10 +63,31 @@ export default function App() {
     return () => clearInterval(seedPollRef.current)
   }, [])
 
-  const handleSelectCompany = useCallback((id) => setSelectedCompanyId(id), [])
-  const handleCloseDetail = useCallback(() => setSelectedCompanyId(null), [])
+  // Navigate to full company detail page
+  const handleOpenCompanyPage = useCallback((id) => setDetailCompanyId(id), [])
+  const handleCloseCompanyPage = useCallback(() => setDetailCompanyId(null), [])
 
-  const showSidebar = activeTab === 'map' || activeTab === 'table'
+  const showSidebar = !detailCompanyId && (activeTab === 'map' || activeTab === 'table')
+
+  // If a company detail page is open, show it full screen
+  if (detailCompanyId) {
+    return (
+      <div className="flex flex-col h-screen overflow-hidden bg-[#F0F4F8]">
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={(tab) => { setDetailCompanyId(null); setActiveTab(tab) }}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+        />
+        <CompanyDetailPage
+          companyId={detailCompanyId}
+          onClose={handleCloseCompanyPage}
+          onOpenCompany={handleOpenCompanyPage}
+          darkMode={darkMode}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#F0F4F8]">
@@ -79,7 +102,7 @@ export default function App() {
       {seedBanner && (
         <div className="bg-[#4599FE] text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-3">
           <span className="animate-spin"></span>
-          Importing NAATBatt battery company database — this may take a few minutes on first run…
+          Importing battery company database — this may take a few minutes on first run…
         </div>
       )}
 
@@ -100,28 +123,22 @@ export default function App() {
           {activeTab === 'map' && (
             <CompanyMap
               filters={filters}
-              onSelectCompany={handleSelectCompany}
+              onSelectCompany={handleOpenCompanyPage}
               highlightName={highlightCompany}
               darkMode={darkMode}
             />
           )}
-          {activeTab === 'table' && <CompanyTable filters={filters} />}
+          {activeTab === 'table' && (
+            <CompanyTable filters={filters} onOpenCompany={handleOpenCompanyPage} />
+          )}
           {activeTab === 'news' && <NewsFeed />}
           {activeTab === 'network' && (
-            <PartnershipNetwork onSelectCompany={handleSelectCompany} darkMode={darkMode} />
+            <PartnershipNetwork onSelectCompany={handleOpenCompanyPage} darkMode={darkMode} />
           )}
           {activeTab === 'research' && <ResearchPanel />}
           {activeTab === 'proceedings' && <Proceedings />}
         </main>
       </div>
-
-      {/* Global company detail panel (map, network) */}
-      {selectedCompanyId && (
-        <CompanyDetail
-          companyId={selectedCompanyId}
-          onClose={handleCloseDetail}
-        />
-      )}
     </div>
   )
 }
