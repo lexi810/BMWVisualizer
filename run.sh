@@ -18,6 +18,8 @@ fi
 
 # 3. Seed DB on first run (downloads XLSX if needed)
 python backend/seed.py
+python backend/seed_bbd.py
+python backend/seed_gigafactory.py
 
 # 4. Start backend
 uvicorn backend.main:app --reload --port 8000 &
