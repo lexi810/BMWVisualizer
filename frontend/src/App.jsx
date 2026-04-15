@@ -7,7 +7,6 @@ import NewsFeed from './components/NewsFeed'
 import PartnershipNetwork from './components/PartnershipNetwork'
 import ResearchPanel from './components/ResearchPanel'
 import WatchlistPanel from './components/WatchlistPanel'
-import Proceedings from './components/Proceedings'
 import CompanyDetailPage from './components/CompanyDetailPage'
 import { getSeedStatus, triggerSeed, getWatchlistDigest } from './api/client'
 
@@ -21,6 +20,7 @@ export default function App() {
   const [seedBanner, setSeedBanner] = useState(false)
   // Company detail full page view
   const [detailCompanyId, setDetailCompanyId] = useState(null)
+  const [dataImportOpen, setDataImportOpen] = useState(false)
   const seedPollRef = useRef(null)
 
   const [watchlistBreaking, setWatchlistBreaking] = useState(0)
@@ -94,6 +94,7 @@ export default function App() {
           darkMode={darkMode}
           setDarkMode={setDarkMode}
           watchlistBreaking={watchlistBreaking}
+          onOpenDataImport={() => setDataImportOpen(true)}
         />
         <CompanyDetailPage
           companyId={detailCompanyId}
@@ -113,6 +114,7 @@ export default function App() {
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         watchlistBreaking={watchlistBreaking}
+        onOpenDataImport={() => setDataImportOpen(true)}
       />
 
       {/* Seeding banner */}
@@ -153,10 +155,29 @@ export default function App() {
           {activeTab === 'network' && (
             <PartnershipNetwork onSelectCompany={handleOpenCompanyPage} darkMode={darkMode} />
           )}
-          {activeTab === 'research' && <ResearchPanel />}
-          {activeTab === 'proceedings' && <Proceedings />}
         </main>
       </div>
+
+      {/* Data Import Modal */}
+      {dataImportOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">Data Import</h2>
+              <button
+                onClick={() => setDataImportOpen(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6">
+              <ResearchPanel />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
