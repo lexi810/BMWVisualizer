@@ -4,18 +4,33 @@ export default {
   content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'Segoe UI', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        display: ['Poppins', 'Segoe UI', 'sans-serif'],
+      },
       colors: {
         bmw: {
-          blue: '#4599FE',
-          navy: '#031E49',
-          red: '#EE0405',
-          white: '#FFFDFE',
-          gunmetal: '#2D4046',
-          loblolly: '#B8CAD1',
-          gray: '#F0F4F8',
-          border: '#B8CAD1',
-          text: '#031E49',
+          // Primary colors
+          blue: '#1C69D4',
+          navy: '#001a33',
+          navy_light: '#031E49',
+          // Accent & status
+          red: '#E60105',
+          green: '#00AA44',
+          gray_light: '#F5F7FA',
+          gray_medium: '#E8ECEF',
+          gray_dark: '#B5BFCA',
+          // UI elements
+          white: '#FFFFFF',
+          text_primary: '#001a33',
+          text_secondary: '#666666',
+          border: '#E0E4E8',
         },
+      },
+      boxShadow: {
+        'light': '0 1px 3px rgba(0, 26, 51, 0.08)',
+        'medium': '0 4px 6px rgba(0, 26, 51, 0.12)',
+        'strong': '0 10px 25px rgba(0, 26, 51, 0.15)',
       },
     },
   },

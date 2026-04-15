@@ -48,24 +48,24 @@ export default function Proceedings() {
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="bg-white border-b border-[#B8CAD1] p-4 flex flex-wrap gap-3 items-center">
+      <div className="bg-white border-b border-bmw-border p-4 flex flex-wrap gap-3 items-center">
         <input
           type="text"
           placeholder="Search proceedings…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-[#B8CAD1] rounded px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-[#4599FE]"
+          className="border border-bmw-border rounded px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-bmw-blue"
         />
         <input
           type="text"
           placeholder="Filter by technology…"
           value={technology}
           onChange={(e) => setTechnology(e.target.value)}
-          className="border border-[#B8CAD1] rounded px-3 py-2 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-[#4599FE]"
+          className="border border-bmw-border rounded px-3 py-2 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-bmw-blue"
         />
         <span className="text-sm text-gray-500">{proceedings.length} records</span>
         <label className="ml-auto cursor-pointer">
-          <span className="bg-[#4599FE] hover:bg-[#4599FE] text-white text-sm px-4 py-2 rounded inline-block">
+          <span className="bg-bmw-blue hover:bg-bmw-blue text-white text-sm px-4 py-2 rounded inline-block">
             {uploading ? 'Uploading…' : '+ Upload Document'}
           </span>
           <input
@@ -108,19 +108,19 @@ function ProceedingCard({ proc }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="bg-white rounded-lg border border-[#B8CAD1] p-4 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg border border-bmw-border p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start gap-3">
-        <span className="text-xs font-semibold bg-[#F0F4F8] border border-[#B8CAD1] text-[#031E49] px-2 py-1 rounded flex-shrink-0 mt-0.5">
+        <span className="text-xs font-semibold bg-bmw-gray_light border border-bmw-border text-[text-bmw-text_primary] px-2 py-1 rounded flex-shrink-0 mt-0.5">
           {SOURCE_LABELS[proc.source_type] || 'Doc'}
         </span>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-[#031E49] text-sm leading-snug">{proc.title}</h3>
+          <h3 className="font-semibold text-[text-bmw-text_primary] text-sm leading-snug">{proc.title}</h3>
           <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-gray-500">
             {proc.event_name && <span className="font-medium text-gray-700">{proc.event_name}</span>}
             {proc.event_date && <span>{proc.event_date}</span>}
             {proc.location && <span> {proc.location}</span>}
             {proc.company_name && (
-              <span className="text-[#4599FE]">{proc.company_name}</span>
+              <span className="text-bmw-blue">{proc.company_name}</span>
             )}
           </div>
 
@@ -130,7 +130,7 @@ function ProceedingCard({ proc }) {
               {proc.technologies.map((t) => (
                 <span
                   key={t}
-                  className="bg-[#E8F1FF] text-[#4599FE] text-xs px-2 py-0.5 rounded-full"
+                  className="bg-[#E8F1FF] text-bmw-blue text-xs px-2 py-0.5 rounded-full"
                 >
                   {t}
                 </span>
@@ -151,7 +151,7 @@ function ProceedingCard({ proc }) {
           {proc.results_summary && proc.results_summary.length > 150 && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-xs text-[#4599FE] mt-1 hover:underline"
+              className="text-xs text-bmw-blue mt-1 hover:underline"
             >
               {expanded ? 'Show less' : 'Show more'}
             </button>
@@ -171,7 +171,7 @@ function ProceedingCard({ proc }) {
           {proc.topics?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {proc.topics.map((t) => (
-                <span key={t} className="bg-[#F0F4F8] text-gray-600 text-xs px-2 py-0.5 rounded">
+                <span key={t} className="bg-bmw-gray_light text-gray-600 text-xs px-2 py-0.5 rounded">
                   {t}
                 </span>
               ))}
@@ -184,7 +184,7 @@ function ProceedingCard({ proc }) {
               href={proc.source_url}
               target="_blank"
               rel="noreferrer"
-              className="inline-block mt-2 text-xs text-[#4599FE] hover:underline"
+              className="inline-block mt-2 text-xs text-bmw-blue hover:underline"
             >
               View source →
             </a>

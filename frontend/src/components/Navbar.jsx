@@ -53,7 +53,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
     : 'Never'
 
   return (
-    <nav className="bg-[#031E49] select-none border-b border-[#0a2a5e]" style={{ height: '44px' }}>
+    <nav className="bg-bmw-navy select-none border-b border-bmw-navy_light" style={{ height: '44px' }}>
       <div className="flex items-center h-full px-4 gap-6">
         {/* Logo + Title */}
         <div className="flex items-center gap-2 min-w-fit">
@@ -62,7 +62,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
             alt="BMW"
             className="w-6 h-6 rounded-full object-cover flex-shrink-0"
           />
-          <span className="text-white font-semibold text-sm whitespace-nowrap tracking-wide">
+          <span className="text-white font-semibold text-sm whitespace-nowrap tracking-tight font-display">
             BMW Battery Intelligence
           </span>
         </div>
@@ -76,7 +76,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
               className={`relative h-full px-4 text-sm whitespace-nowrap transition-colors ${
                 activeTab === tab.id
                   ? 'text-white'
-                  : 'text-[#8aa4be] hover:text-white'
+                  : 'text-bmw-gray_dark hover:text-white'
               }`}
             >
               <span className="flex items-center gap-1.5">
@@ -86,7 +86,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
                 )}
               </span>
               {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#4599FE]" />
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-bmw-blue" />
               )}
             </button>
           ))}
@@ -94,13 +94,13 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
 
         {/* Sync badge */}
         <div className="flex items-center gap-2 min-w-fit">
-          <span className="text-[#8aa4be] text-xs whitespace-nowrap">
+          <span className="text-bmw-gray_dark text-xs whitespace-nowrap">
             Synced: <span className="text-white">{lastSynced}</span>
           </span>
           <button
             onClick={handleSync}
             disabled={syncing}
-            className="border border-[#4599FE] text-[#4599FE] hover:bg-[#4599FE] hover:text-white disabled:opacity-40 text-xs px-3 py-1 rounded transition-colors"
+            className="border border-bmw-blue text-bmw-blue hover:bg-bmw-blue hover:text-white disabled:opacity-40 text-xs px-3 py-1 rounded transition-colors font-medium"
           >
             {syncing ? 'Syncing\u2026' : 'Sync Now'}
           </button>
@@ -112,8 +112,8 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
             onClick={() => setSettingsOpen((o) => !o)}
             className={`p-1.5 rounded transition-colors ${
               settingsOpen
-                ? 'bg-[#0a2a5e] text-white'
-                : 'text-[#8aa4be] hover:text-white'
+                ? 'bg-bmw-navy_light text-white'
+                : 'text-bmw-gray_dark hover:text-white'
             }`}
             title="Settings"
           >
@@ -125,7 +125,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
 
           {/* Dropdown */}
           {settingsOpen && (
-            <div className="absolute right-0 top-full mt-1 w-56 bg-[#031E49] border border-[#0a2a5e] rounded-lg shadow-2xl z-50 py-1 overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 w-56 bg-[text-bmw-text_primary] border border-[#0a2a5e] rounded-lg shadow-2xl z-50 py-1 overflow-hidden">
               <div className="px-3 py-2 text-[10px] font-semibold text-[#8aa4be] uppercase tracking-wider">
                 Appearance
               </div>
@@ -144,7 +144,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
                 </svg>
                 Light
                 {!darkMode && (
-                  <svg className="w-3.5 h-3.5 ml-auto text-[#4599FE]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <svg className="w-3.5 h-3.5 ml-auto text-bmw-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                   </svg>
                 )}
@@ -164,7 +164,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
                 </svg>
                 Dark
                 {darkMode && (
-                  <svg className="w-3.5 h-3.5 ml-auto text-[#4599FE]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <svg className="w-3.5 h-3.5 ml-auto text-bmw-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                   </svg>
                 )}

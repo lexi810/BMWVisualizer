@@ -189,11 +189,11 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* ── Top header ── */}
-      <div className="bg-[#031E49] text-white px-6 py-4">
+      <div className="bg-bmw-navy text-white px-6 py-4">
         <div className="flex items-center gap-4">
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-sm flex items-center gap-1 shrink-0"
+            className="text-gray-400 hover:text-white text-sm flex items-center gap-1 shrink-0 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -204,8 +204,8 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
             <LogoImg website={company.company_website} name={company.company_name} />
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold leading-tight">{company.company_name}</h1>
-            <div className="text-sm text-blue-300 mt-0.5 flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-display font-bold leading-tight">{company.company_name}</h1>
+            <div className="text-sm text-gray-300 mt-1 flex items-center gap-3 flex-wrap">
               {company.company_type && <span>{company.company_type}</span>}
               {company.company_status && (
                 <span className="bg-white/10 px-2 py-0.5 rounded text-xs">{company.company_status}</span>
@@ -232,15 +232,15 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
       </div>
 
       {/* ── Section tabs ── */}
-      <div className="bg-white border-b border-[#B8CAD1] px-6 flex items-center gap-1 overflow-x-auto">
+      <div className="bg-white border-b border-bmw-border px-6 flex items-center gap-1 overflow-x-auto">
         {sections.map((s) => (
           <button
             key={s.id}
             onClick={() => setActiveSection(s.id)}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
               activeSection === s.id
-                ? 'text-[#1C69D4] border-[#1C69D4]'
-                : 'text-gray-500 border-transparent hover:text-gray-700'
+                ? 'text-bmw-blue border-bmw-blue'
+                : 'text-bmw-text_secondary border-transparent hover:text-bmw-text_primary'
             }`}
           >
             {s.label}
@@ -333,7 +333,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <Section title="Keywords">
                   <div className="flex flex-wrap gap-1.5">
                     {company.keywords.map((k) => (
-                      <span key={k} className="bg-[#F0F4F8] border border-[#B8CAD1] text-xs px-2.5 py-1 rounded-full">{k}</span>
+                      <span key={k} className="bg-bmw-gray_light border border-bmw-border text-xs px-2.5 py-1 rounded-full">{k}</span>
                     ))}
                   </div>
                 </Section>
@@ -366,9 +366,9 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <Section title="Manufacturing Capacity (GWh)">
                   <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                     {Object.entries(company.gwh_capacity).sort(([a], [b]) => a.localeCompare(b)).map(([year, val]) => (
-                      <div key={year} className="bg-[#F0F4F8] rounded p-2 text-center">
+                      <div key={year} className="bg-bmw-gray_light rounded p-2 text-center">
                         <div className="text-xs text-gray-500">{year}</div>
-                        <div className="text-sm font-semibold text-[#031E49]">{val}</div>
+                        <div className="text-sm font-semibold text-[text-bmw-text_primary]">{val}</div>
                       </div>
                     ))}
                   </div>
@@ -378,10 +378,10 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
               {/* Contact */}
               {(company.contact_name || company.contact_email || company.contact_phone) && (
                 <Section title="Contact">
-                  <div className="bg-[#F0F4F8] rounded-lg p-4 space-y-1">
-                    {company.contact_name && <div className="text-sm font-medium text-[#031E49]">{company.contact_name}</div>}
-                    {company.contact_email && <a href={`mailto:${company.contact_email}`} className="text-sm text-[#4599FE] hover:underline block">{company.contact_email}</a>}
-                    {company.contact_email2 && <a href={`mailto:${company.contact_email2}`} className="text-sm text-[#4599FE] hover:underline block">{company.contact_email2}</a>}
+                  <div className="bg-bmw-gray_light rounded-lg p-4 space-y-1">
+                    {company.contact_name && <div className="text-sm font-medium text-[text-bmw-text_primary]">{company.contact_name}</div>}
+                    {company.contact_email && <a href={`mailto:${company.contact_email}`} className="text-sm text-bmw-blue hover:underline block">{company.contact_email}</a>}
+                    {company.contact_email2 && <a href={`mailto:${company.contact_email2}`} className="text-sm text-bmw-blue hover:underline block">{company.contact_email2}</a>}
                     {company.contact_phone && <div className="text-sm text-gray-500">{company.contact_phone}</div>}
                   </div>
                 </Section>
@@ -399,9 +399,9 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <Section title="Additional Metrics">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {company.metrics.map((m, i) => (
-                      <div key={i} className="bg-[#F0F4F8] rounded p-3">
+                      <div key={i} className="bg-bmw-gray_light rounded p-3">
                         <div className="text-xs text-gray-500 uppercase">{m.metric_name.replace(/_/g, ' ')}</div>
-                        <div className="text-sm font-semibold text-[#031E49] mt-0.5">
+                        <div className="text-sm font-semibold text-[text-bmw-text_primary] mt-0.5">
                           {m.metric_value?.toLocaleString()} {m.metric_unit || ''}
                         </div>
                         {m.date_recorded && <div className="text-xs text-gray-400 mt-0.5">{m.date_recorded}</div>}
@@ -420,16 +420,16 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <EmptyState text="No facility data available" />
               ) : (
                 company.facilities.map((f, i) => (
-                  <div key={f.id || i} className="bg-white border border-[#B8CAD1] rounded-lg p-4 space-y-2">
+                  <div key={f.id || i} className="bg-white border border-bmw-border rounded-lg p-4 space-y-2">
                     <div className="flex items-start justify-between">
                       <div>
-                        {f.facility_name && <div className="font-medium text-[#031E49]">{f.facility_name}</div>}
+                        {f.facility_name && <div className="font-medium text-[text-bmw-text_primary]">{f.facility_name}</div>}
                         <div className="text-sm text-gray-500 mt-0.5">
                           {[f.address, f.city, f.state, f.country, f.zip_code].filter(Boolean).join(', ')}
                         </div>
                       </div>
                       {f.status && (
-                        <span className="text-xs bg-[#F0F4F8] px-2 py-0.5 rounded">{f.status}</span>
+                        <span className="text-xs bg-bmw-gray_light px-2 py-0.5 rounded">{f.status}</span>
                       )}
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-600">
@@ -462,7 +462,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 allPartnerships.map((p) => (
                   <div
                     key={p.id}
-                    className="bg-white border border-[#B8CAD1] rounded-lg p-4 cursor-pointer hover:border-[#4599FE] transition-colors"
+                    className="bg-white border border-bmw-border rounded-lg p-4 cursor-pointer hover:border-bmw-blue transition-colors"
                     onClick={() => setSelectedPartnership(selectedPartnership?.id === p.id ? null : p)}
                   >
                     <div className="flex items-center justify-between">
@@ -472,7 +472,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                           style={{ backgroundColor: PARTNERSHIP_TYPE_COLORS[p.partnership_type] || '#94A3B8' }}
                         />
                         <div>
-                          <div className="font-medium text-[#031E49] text-sm">{p.partnership_name || 'Partnership'}</div>
+                          <div className="font-medium text-[text-bmw-text_primary] text-sm">{p.partnership_name || 'Partnership'}</div>
                           <div className="text-xs text-gray-500 mt-0.5">
                             {PARTNERSHIP_TYPE_LABELS[p.partnership_type] || p.partnership_type}
                             {p.date_announced && ` -- ${p.date_announced}`}
@@ -481,7 +481,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                       </div>
                       <div className="flex items-center gap-2">
                         {p.deal_value && (
-                          <span className="text-xs font-medium text-[#031E49]">{formatMoney(p.deal_value)}</span>
+                          <span className="text-xs font-medium text-[text-bmw-text_primary]">{formatMoney(p.deal_value)}</span>
                         )}
                         {p.stage && (
                           <span className={`text-xs px-2 py-0.5 rounded ${STAGE_COLORS[p.stage] || 'bg-gray-100 text-gray-700'}`}>
@@ -513,7 +513,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                     </div>
                     {/* Expanded detail on click */}
                     {selectedPartnership?.id === p.id && (
-                      <div className="mt-3 pt-3 border-t border-[#B8CAD1] space-y-2 text-sm">
+                      <div className="mt-3 pt-3 border-t border-bmw-border space-y-2 text-sm">
                         {p.scope && <div><b className="text-gray-500">Scope:</b> {p.scope}</div>}
                         {p.geography && <div><b className="text-gray-500">Geography:</b> {p.geography}</div>}
                         {p.direction && <div><b className="text-gray-500">Direction:</b> {p.direction.replace(/_/g, ' ')}</div>}
@@ -521,7 +521,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                         {p.date_expiration && <div><b className="text-gray-500">Expiration:</b> {p.date_expiration}</div>}
                         {p.source_name && <div><b className="text-gray-500">Source:</b> {p.source_name}</div>}
                         {p.source_url && (
-                          <a href={p.source_url} target="_blank" rel="noreferrer" className="text-[#4599FE] hover:underline text-xs">
+                          <a href={p.source_url} target="_blank" rel="noreferrer" className="text-bmw-blue hover:underline text-xs">
                             View source
                           </a>
                         )}
@@ -540,8 +540,8 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <EmptyState text="No news articles available" />
               ) : (
                 company.news.map((n) => (
-                  <div key={n.id} className="bg-white border border-[#B8CAD1] rounded-lg p-4">
-                    <div className="font-medium text-[#031E49] text-sm">{n.news_headline}</div>
+                  <div key={n.id} className="bg-white border border-bmw-border rounded-lg p-4">
+                    <div className="font-medium text-[text-bmw-text_primary] text-sm">{n.news_headline}</div>
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${CATEGORY_COLORS[n.category] || CATEGORY_COLORS.other}`}>
                         {n.category}
@@ -549,7 +549,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                       <span className="text-gray-400 text-xs">{n.date_of_article}</span>
                       {n.news_source && <span className="text-gray-400 text-xs">{n.news_source}</span>}
                       {n.url && (
-                        <a href={n.url} target="_blank" rel="noreferrer" className="text-[#4599FE] text-xs hover:underline">
+                        <a href={n.url} target="_blank" rel="noreferrer" className="text-bmw-blue text-xs hover:underline">
                           Source
                         </a>
                       )}
@@ -558,7 +558,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                     {n.topics?.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {n.topics.map((t, i) => (
-                          <span key={i} className="text-[10px] bg-[#F0F4F8] px-1.5 py-0.5 rounded">{t}</span>
+                          <span key={i} className="text-[10px] bg-bmw-gray_light px-1.5 py-0.5 rounded">{t}</span>
                         ))}
                       </div>
                     )}
@@ -576,7 +576,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <button
                   onClick={handleReResearch}
                   disabled={researching}
-                  className="text-xs bg-[#031E49] hover:bg-[#0D2A5E] disabled:opacity-60 text-white px-4 py-1.5 rounded transition-colors"
+                  className="text-xs bg-[text-bmw-text_primary] hover:bg-[#0D2A5E] disabled:opacity-60 text-white px-4 py-1.5 rounded transition-colors"
                 >
                   {researching ? 'Researching...' : 'Full re-research'}
                 </button>
@@ -589,8 +589,8 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                     <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] rounded-lg px-4 py-2.5 text-sm whitespace-pre-wrap leading-relaxed ${
                         m.role === 'user'
-                          ? 'bg-[#4599FE] text-white'
-                          : 'bg-[#F0F4F8] text-gray-800 border border-[#B8CAD1]'
+                          ? 'bg-bmw-blue text-white'
+                          : 'bg-bmw-gray_light text-gray-800 border border-bmw-border'
                       }`}>
                         {m.text}
                       </div>
@@ -598,7 +598,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                   ))}
                   {chatLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-[#F0F4F8] border border-[#B8CAD1] rounded-lg px-4 py-2.5 text-sm text-gray-400 animate-pulse">
+                      <div className="bg-bmw-gray_light border border-bmw-border rounded-lg px-4 py-2.5 text-sm text-gray-400 animate-pulse">
                         Thinking...
                       </div>
                     </div>
@@ -615,12 +615,12 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
                   disabled={chatLoading}
-                  className="flex-1 border border-[#B8CAD1] rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4599FE] disabled:opacity-60"
+                  className="flex-1 border border-bmw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-bmw-blue disabled:opacity-60"
                 />
                 <button
                   onClick={handleChatSend}
                   disabled={chatLoading || !chatInput.trim()}
-                  className="bg-[#4599FE] hover:bg-[#3a88ee] disabled:opacity-60 text-white px-5 py-2 rounded text-sm font-medium transition-colors"
+                  className="bg-bmw-blue hover:bg-[#3a88ee] disabled:opacity-60 text-white px-5 py-2 rounded text-sm font-medium transition-colors"
                 >
                   Send
                 </button>
@@ -639,7 +639,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                     <div
                       key={sc.id}
                       onClick={() => onOpenCompany && onOpenCompany(sc.id)}
-                      className="bg-white border border-[#B8CAD1] rounded-lg p-4 cursor-pointer hover:border-[#4599FE] hover:shadow-sm transition-all"
+                      className="bg-white border border-bmw-border rounded-lg p-4 cursor-pointer hover:border-bmw-blue hover:shadow-sm transition-all"
                     >
                       <div className="font-medium text-[#1A5FAD] text-sm">{sc.company_name}</div>
                       <div className="text-xs text-gray-500 mt-1">
@@ -647,7 +647,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                         {sc.company_hq_country && <span> -- {sc.company_hq_country}</span>}
                       </div>
                       {sc.industry_segment && (
-                        <span className="text-[10px] bg-[#F0F4F8] px-1.5 py-0.5 rounded mt-1.5 inline-block">{sc.industry_segment}</span>
+                        <span className="text-[10px] bg-bmw-gray_light px-1.5 py-0.5 rounded mt-1.5 inline-block">{sc.industry_segment}</span>
                       )}
                     </div>
                   ))}
@@ -667,10 +667,10 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
               ) : (
                 <div className="space-y-2">
                   {company.citations.map((c, i) => (
-                    <div key={i} className="bg-white border border-[#B8CAD1] rounded-lg px-4 py-3 flex items-center justify-between">
-                      <span className="text-sm text-[#031E49]">{c.source_name}</span>
+                    <div key={i} className="bg-white border border-bmw-border rounded-lg px-4 py-3 flex items-center justify-between">
+                      <span className="text-sm text-[text-bmw-text_primary]">{c.source_name}</span>
                       {c.source_url ? (
-                        <a href={c.source_url} target="_blank" rel="noreferrer" className="text-[#4599FE] text-sm hover:underline">
+                        <a href={c.source_url} target="_blank" rel="noreferrer" className="text-bmw-blue text-sm hover:underline">
                           {c.source_url}
                         </a>
                       ) : (
@@ -704,9 +704,9 @@ function StatPill({ label, value }) {
 function InfoCard({ label, value }) {
   if (!value) return null
   return (
-    <div className="bg-[#F0F4F8] rounded-lg p-3">
+    <div className="bg-bmw-gray_light rounded-lg p-3">
       <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{label}</div>
-      <div className="text-sm text-[#031E49] mt-0.5 font-medium">{value}</div>
+      <div className="text-sm text-[text-bmw-text_primary] mt-0.5 font-medium">{value}</div>
     </div>
   )
 }
@@ -726,7 +726,7 @@ function ExtLink({ label, url }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-1.5 text-xs text-[#4599FE] hover:underline bg-blue-50 px-3 py-1.5 rounded-full"
+      className="inline-flex items-center gap-1.5 text-xs text-bmw-blue hover:underline bg-blue-50 px-3 py-1.5 rounded-full"
     >
       {label}
       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

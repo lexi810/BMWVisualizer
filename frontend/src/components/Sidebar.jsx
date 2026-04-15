@@ -26,12 +26,12 @@ function DropdownFilter({ label, options, selected, onChange }) {
   const activeCount = selected.length
 
   return (
-    <div className="border-b border-[#B8CAD1]">
+    <div className="border-b border-bmw-border">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#031E49] hover:bg-[#F0F4F8] transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[text-bmw-text_primary] hover:bg-bmw-gray_light transition-colors"
       >
-        <span>{label}{activeCount > 0 ? <span className="ml-1 text-[#4599FE]">({activeCount})</span> : ''}</span>
+        <span>{label}{activeCount > 0 ? <span className="ml-1 text-bmw-blue">({activeCount})</span> : ''}</span>
         <svg
           className={`flex-shrink-0 w-3 h-3 transition-transform text-gray-400 ${open ? 'rotate-180' : ''}`}
           viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5"
@@ -45,7 +45,7 @@ function DropdownFilter({ label, options, selected, onChange }) {
           {options.map((opt) => (
             <label
               key={opt}
-              className="flex items-center gap-2 px-3 py-0.5 cursor-pointer hover:bg-[#F0F4F8]"
+              className="flex items-center gap-2 px-3 py-0.5 cursor-pointer hover:bg-bmw-gray_light"
             >
               <input
                 type="checkbox"
@@ -56,14 +56,14 @@ function DropdownFilter({ label, options, selected, onChange }) {
                     : [...selected, opt]
                   onChange(next)
                 }}
-                className="accent-[#4599FE] flex-shrink-0"
+                className="accent-bmw-blue flex-shrink-0"
               />
               <span className="text-xs text-gray-700">{opt}</span>
             </label>
           ))}
           <button
             onClick={() => onChange([])}
-            className={`w-full text-left px-3 py-1.5 text-xs border-t border-[#B8CAD1] ${activeCount > 0 ? 'text-[#4599FE] hover:bg-[#F0F4F8] cursor-pointer' : 'invisible pointer-events-none'}`}
+            className={`w-full text-left px-3 py-1.5 text-xs border-t border-bmw-border ${activeCount > 0 ? 'text-bmw-blue hover:bg-bmw-gray_light cursor-pointer' : 'invisible pointer-events-none'}`}
           >
             Clear
           </button>
@@ -114,13 +114,13 @@ export default function Sidebar({ filters, setFilters, collapsed, setCollapsed, 
 
   return (
     <aside
-      className={`bg-white border-r border-[#B8CAD1] transition-all duration-200 flex-shrink-0 flex flex-col ${
+      className={`bg-white border-r border-bmw-border transition-all duration-200 flex-shrink-0 flex flex-col ${
         collapsed ? 'w-10' : 'w-64'
       }`}
     >
-      <div className="flex items-center justify-between px-2 py-2 border-b border-[#B8CAD1] flex-shrink-0">
+      <div className="flex items-center justify-between px-2 py-2 border-b border-bmw-border flex-shrink-0">
         {!collapsed && (
-          <span className="text-xs font-semibold text-[#031E49] uppercase tracking-wider">Filters</span>
+          <span className="text-xs font-semibold text-[text-bmw-text_primary] uppercase tracking-wider">Filters</span>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
@@ -140,7 +140,7 @@ export default function Sidebar({ filters, setFilters, collapsed, setCollapsed, 
           }}
         >
           {/* Search */}
-          <div className="px-3 py-2 border-b border-[#B8CAD1] relative" ref={searchRef}>
+          <div className="px-3 py-2 border-b border-bmw-border relative" ref={searchRef}>
             <input
               type="text"
               placeholder="Search companies…"
@@ -148,17 +148,17 @@ export default function Sidebar({ filters, setFilters, collapsed, setCollapsed, 
               onChange={(e) => handleSearchChange(e.target.value)}
               onFocus={() => filters.search && setShowSuggestions(suggestions.length > 0)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-              className="w-full border border-[#B8CAD1] rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#4599FE]"
+              className="w-full border border-bmw-border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-bmw-blue"
             />
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute left-3 right-3 top-full mt-0 bg-white border border-[#B8CAD1] rounded shadow-lg z-50 overflow-hidden">
+              <div className="absolute left-3 right-3 top-full mt-0 bg-white border border-bmw-border rounded shadow-lg z-50 overflow-hidden">
                 {suggestions.map((name) => (
                   <button
                     key={name}
                     onMouseDown={() => selectSuggestion(name)}
                     onMouseEnter={() => onHighlightCompany?.(name)}
                     onMouseLeave={() => onHighlightCompany?.(null)}
-                    className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-[#E8F1FF] hover:text-[#031E49] border-b border-[#B8CAD1] last:border-b-0 truncate"
+                    className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-[#E8F1FF] hover:text-[text-bmw-text_primary] border-b border-bmw-border last:border-b-0 truncate"
                   >
                     {name}
                   </button>
@@ -167,11 +167,11 @@ export default function Sidebar({ filters, setFilters, collapsed, setCollapsed, 
             )}
           </div>
 
-          <div className="px-3 py-2 border-b border-[#B8CAD1] flex items-center justify-between">
+          <div className="px-3 py-2 border-b border-bmw-border flex items-center justify-between">
             <span className="text-xs text-gray-400">Filter companies</span>
             <button
               onClick={() => setFilters({ search: '', types: [], statuses: [], segments: [], countries: [] })}
-              className="text-xs text-[#4599FE] hover:underline"
+              className="text-xs text-bmw-blue hover:underline"
             >
               Clear all
             </button>

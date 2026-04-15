@@ -41,7 +41,7 @@ const CATEGORY_COLORS = {
   'Raw Materials': '#F59E0B',
   'Battery Grade Materials': '#EAB308',
   'Other Battery Components & Mat.': '#D97706',
-  'Electrode & Cell Manufacturing': '#4599FE',
+  'Electrode & Cell Manufacturing': 'bmw-blue',
   'Module-Pack Manufacturing': '#2563EB',
   'Recycling-Repurposing': '#10B981',
   'Equipment': '#06B6D4',
@@ -189,10 +189,10 @@ export default function CompanyTable({ filters, onOpenCompany }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Category tabs */}
-      <div className="flex flex-wrap gap-1.5 px-4 pt-3 pb-2 bg-[#F0F4F8] border-b border-[#B8CAD1]">
+      <div className="flex flex-wrap gap-1.5 px-4 pt-3 pb-2 bg-bmw-gray_light border-b border-bmw-border">
         {CATEGORIES.map((cat) => {
           const isActive = activeCategory === cat.key
-          const color = CATEGORY_COLORS[cat.key] || '#4599FE'
+          const color = CATEGORY_COLORS[cat.key] || 'bmw-blue'
           const count = categoryCounts[cat.key] || 0
           return (
             <button
@@ -201,9 +201,9 @@ export default function CompanyTable({ filters, onOpenCompany }) {
               className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                 isActive
                   ? 'text-white shadow-sm'
-                  : 'bg-white text-gray-600 border border-[#B8CAD1] hover:bg-gray-50'
+                  : 'bg-white text-gray-600 border border-bmw-border hover:bg-gray-50'
               }`}
-              style={isActive ? { backgroundColor: cat.key === 'all' ? '#4599FE' : color } : {}}
+              style={isActive ? { backgroundColor: cat.key === 'all' ? 'bmw-blue' : color } : {}}
             >
               {cat.label}
               <span className={`ml-1.5 ${isActive ? 'text-white/80' : 'text-gray-400'}`}>
@@ -215,18 +215,18 @@ export default function CompanyTable({ filters, onOpenCompany }) {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 py-2 border-b border-[#B8CAD1] bg-white">
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-bmw-border bg-white">
         <input
           type="text"
           placeholder="Search companies…"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-          className="flex-1 border border-[#B8CAD1] rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#4599FE]"
+          className="flex-1 border border-bmw-border rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-bmw-blue"
         />
         <span className="text-xs text-gray-500">{filtered.length} results</span>
         <button
           onClick={() => exportCSV(filtered)}
-          className="bg-[#4599FE] hover:bg-[#3a88ee] text-white text-xs px-3 py-1.5 rounded"
+          className="bg-bmw-blue hover:bg-[#3a88ee] text-white text-xs px-3 py-1.5 rounded"
         >
           Export CSV
         </button>
@@ -351,7 +351,7 @@ export default function CompanyTable({ filters, onOpenCompany }) {
         <select
           value={pageSize}
           onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}
-          className="border border-[#B8CAD1] rounded px-1.5 py-0.5 text-xs bg-white"
+          className="border border-bmw-border rounded px-1.5 py-0.5 text-xs bg-white"
         >
           {[25, 50, 100, 250].map((n) => (
             <option key={n} value={n}>{n}</option>
@@ -373,7 +373,7 @@ export default function CompanyTable({ filters, onOpenCompany }) {
             key={p}
             onClick={() => setPage(p)}
             className={`w-6 h-6 rounded text-center ${
-              page === p ? 'bg-[#4599FE] text-white font-bold' : 'hover:bg-gray-200'
+              page === p ? 'bg-bmw-blue text-white font-bold' : 'hover:bg-gray-200'
             }`}
           >
             {p}
@@ -384,7 +384,7 @@ export default function CompanyTable({ filters, onOpenCompany }) {
           <button
             onClick={() => setPage(totalPages)}
             className={`w-6 h-6 rounded text-center ${
-              page === totalPages ? 'bg-[#4599FE] text-white font-bold' : 'hover:bg-gray-200'
+              page === totalPages ? 'bg-bmw-blue text-white font-bold' : 'hover:bg-gray-200'
             }`}
           >
             {totalPages}
@@ -405,7 +405,7 @@ export default function CompanyTable({ filters, onOpenCompany }) {
           type="number"
           min={1}
           max={totalPages}
-          className="w-12 border border-[#B8CAD1] rounded px-1.5 py-0.5 text-xs bg-white"
+          className="w-12 border border-bmw-border rounded px-1.5 py-0.5 text-xs bg-white"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               const v = Math.max(1, Math.min(totalPages, Number(e.target.value)))

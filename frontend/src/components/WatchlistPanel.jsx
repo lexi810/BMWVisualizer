@@ -87,7 +87,7 @@ function CompanyDigestCard({ digest, onRefreshOne, refreshingId }) {
           {digest.has_breaking && (
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           )}
-          <span className="font-semibold text-sm text-[#031E49]">{digest.company_name}</span>
+          <span className="font-semibold text-sm text-[text-bmw-text_primary]">{digest.company_name}</span>
           {breaking.length > 0 && (
             <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded uppercase tracking-wide">
               {breaking.length} Breaking
@@ -100,7 +100,7 @@ function CompanyDigestCard({ digest, onRefreshOne, refreshingId }) {
             onClick={() => onRefreshOne(digest.company_id)}
             disabled={refreshingId === digest.company_id}
             title="Refresh this company"
-            className="text-[#4599FE] hover:text-[#2a7de8] disabled:opacity-40 transition-colors"
+            className="text-bmw-blue hover:text-[#2a7de8] disabled:opacity-40 transition-colors"
           >
             <svg className={`w-3.5 h-3.5 ${refreshingId === digest.company_id ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -119,7 +119,7 @@ function CompanyDigestCard({ digest, onRefreshOne, refreshingId }) {
             {articles.length > 3 && (
               <button
                 onClick={() => setExpanded((v) => !v)}
-                className="w-full text-xs text-[#4599FE] hover:underline text-center py-1"
+                className="w-full text-xs text-bmw-blue hover:underline text-center py-1"
               >
                 {expanded ? 'Show less' : `Show ${articles.length - 3} more articles`}
               </button>
@@ -135,12 +135,12 @@ function EmptyWatchedCard({ company, onRemove, onRefreshOne, refreshingId }) {
   return (
     <div className="rounded-xl border border-[#DDE4EA] overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-[#F7F9FB]">
-        <span className="font-semibold text-sm text-[#031E49]">{company.company_name}</span>
+        <span className="font-semibold text-sm text-[text-bmw-text_primary]">{company.company_name}</span>
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <button
             onClick={() => onRefreshOne(company.company_id)}
             disabled={refreshingId === company.company_id}
-            className="text-[#4599FE] hover:text-[#2a7de8] disabled:opacity-40 transition-colors"
+            className="text-bmw-blue hover:text-[#2a7de8] disabled:opacity-40 transition-colors"
             title="Fetch news now"
           >
             <svg className={`w-3.5 h-3.5 ${refreshingId === company.company_id ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -159,7 +159,7 @@ function EmptyWatchedCard({ company, onRemove, onRefreshOne, refreshingId }) {
         </div>
       </div>
       <div className="px-4 py-6 text-xs text-gray-400 text-center">
-        No digest yet — click <span className="text-[#4599FE]">↻</span> to fetch news now.
+        No digest yet — click <span className="text-bmw-blue">↻</span> to fetch news now.
       </div>
     </div>
   )
@@ -251,11 +251,11 @@ export default function WatchlistPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#F0F4F8]">
+    <div className="flex flex-col h-full overflow-hidden bg-bmw-gray_light">
       {/* Header bar */}
       <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#DDE4EA]">
         <div className="flex items-center gap-3">
-          <h2 className="font-semibold text-[#031E49] text-sm">Watchlist</h2>
+          <h2 className="font-semibold text-[text-bmw-text_primary] text-sm">Watchlist</h2>
           <span className="text-xs text-gray-400">{watchlist.length} companies</span>
           {breakingCount > 0 && (
             <span className="flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
@@ -269,12 +269,12 @@ export default function WatchlistPanel() {
             <span className="text-xs text-gray-400">Updated {lastRefreshed}</span>
           )}
           {pollTimer && (
-            <span className="text-xs text-[#4599FE] animate-pulse">Fetching news…</span>
+            <span className="text-xs text-bmw-blue animate-pulse">Fetching news…</span>
           )}
           <button
             onClick={handleRunAll}
             disabled={runningAll || watchlist.length === 0}
-            className="flex items-center gap-1.5 bg-[#4599FE] hover:bg-[#2a7de8] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
+            className="flex items-center gap-1.5 bg-bmw-blue hover:bg-[#2a7de8] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
           >
             <svg className={`w-3.5 h-3.5 ${runningAll ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />

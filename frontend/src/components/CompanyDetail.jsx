@@ -111,7 +111,7 @@ export default function CompanyDetail({ companyId, onClose }) {
       {/* Panel */}
       <div className="w-[520px] bg-white shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-[#031E49] text-white px-5 py-4 flex items-start justify-between">
+        <div className="bg-[text-bmw-text_primary] text-white px-5 py-4 flex items-start justify-between">
           <div className="flex items-center gap-3 min-w-0">
             {company?.company_website && (
               <LogoImg website={company.company_website} name={company.company_name} />
@@ -154,10 +154,10 @@ export default function CompanyDetail({ companyId, onClose }) {
               {company.hq_company && (
                 <div className="col-span-2">
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Parent Company</span>
-                  <div className="text-sm text-[#031E49] mt-0.5">
+                  <div className="text-sm text-[text-bmw-text_primary] mt-0.5">
                     {company.hq_company}
                     {company.hq_company_website && (
-                      <a href={company.hq_company_website} target="_blank" rel="noreferrer" className="text-[#4599FE] hover:underline ml-2 text-xs">
+                      <a href={company.hq_company_website} target="_blank" rel="noreferrer" className="text-bmw-blue hover:underline ml-2 text-xs">
                         website
                       </a>
                     )}
@@ -168,7 +168,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                 <div className="col-span-2">
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Website</span>
                   <div className="mt-0.5">
-                    <a href={company.company_website} target="_blank" rel="noreferrer" className="text-[#4599FE] hover:underline text-sm break-all">
+                    <a href={company.company_website} target="_blank" rel="noreferrer" className="text-bmw-blue hover:underline text-sm break-all">
                       {company.company_website}
                     </a>
                   </div>
@@ -178,11 +178,11 @@ export default function CompanyDetail({ companyId, onClose }) {
 
             {/* Contact */}
             {(company.contact_name || company.contact_email || company.contact_phone) && (
-              <div className="bg-[#F0F4F8] rounded-lg p-3 space-y-1">
+              <div className="bg-bmw-gray_light rounded-lg p-3 space-y-1">
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Contact</div>
-                {company.contact_name && <div className="text-sm font-medium text-[#031E49]">{company.contact_name}</div>}
+                {company.contact_name && <div className="text-sm font-medium text-[text-bmw-text_primary]">{company.contact_name}</div>}
                 {company.contact_email && (
-                  <a href={`mailto:${company.contact_email}`} className="text-sm text-[#4599FE] hover:underline block">{company.contact_email}</a>
+                  <a href={`mailto:${company.contact_email}`} className="text-sm text-bmw-blue hover:underline block">{company.contact_email}</a>
                 )}
                 {company.contact_phone && <div className="text-sm text-gray-500">{company.contact_phone}</div>}
               </div>
@@ -202,7 +202,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Keywords</div>
                 <div className="flex flex-wrap gap-1">
                   {company.keywords.map((k) => (
-                    <span key={k} className="bg-[#F0F4F8] border border-[#B8CAD1] text-xs px-2 py-0.5 rounded-full">
+                    <span key={k} className="bg-bmw-gray_light border border-bmw-border text-xs px-2 py-0.5 rounded-full">
                       {k}
                     </span>
                   ))}
@@ -234,7 +234,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                 </div>
                 <div className="space-y-2">
                   {company.announced_partners.map((p, i) => (
-                    <div key={i} className="bg-[#F0F4F8] rounded p-3 text-sm">
+                    <div key={i} className="bg-bmw-gray_light rounded p-3 text-sm">
                       <div className="font-medium">{p.partner_name}</div>
                       <div className="text-gray-500 text-xs mt-0.5">
                         {p.type_of_partnership} {p.scale ? `· ${p.scale}` : ''} {p.date ? `· ${p.date}` : ''}
@@ -253,8 +253,8 @@ export default function CompanyDetail({ companyId, onClose }) {
                 </div>
                 <div className="space-y-2">
                   {company.company_locations.map((loc, i) => (
-                    <div key={i} className="bg-[#F0F4F8] rounded p-3 text-sm">
-                      {loc.facility_name && <div className="font-medium text-[#031E49]">{loc.facility_name}</div>}
+                    <div key={i} className="bg-bmw-gray_light rounded p-3 text-sm">
+                      {loc.facility_name && <div className="font-medium text-[text-bmw-text_primary]">{loc.facility_name}</div>}
                       <div className="text-gray-500 text-xs mt-0.5">
                         {[loc.address, loc.city, loc.state, loc.country, loc.zip].filter(Boolean).join(', ')}
                       </div>
@@ -280,7 +280,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Recent News</div>
                 <div className="space-y-2">
                   {company.news.map((n) => (
-                    <div key={n.id} className="border border-[#B8CAD1] rounded p-3 text-sm">
+                    <div key={n.id} className="border border-bmw-border rounded p-3 text-sm">
                       <div className="font-medium">{n.news_headline}</div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${CATEGORY_COLORS[n.category] || CATEGORY_COLORS.other}`}>
@@ -288,7 +288,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                         </span>
                         <span className="text-gray-400 text-xs">{n.date_of_article}</span>
                         {n.url && (
-                          <a href={n.url} target="_blank" rel="noreferrer" className="text-[#4599FE] text-xs hover:underline">
+                          <a href={n.url} target="_blank" rel="noreferrer" className="text-bmw-blue text-xs hover:underline">
                             Source
                           </a>
                         )}
@@ -315,13 +315,13 @@ export default function CompanyDetail({ companyId, onClose }) {
             )}
 
             {/* AI Chat */}
-            <div className="border-t border-[#B8CAD1] pt-4 space-y-3">
+            <div className="border-t border-bmw-border pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Ask AI about this company</div>
                 <button
                   onClick={handleReResearch}
                   disabled={researching}
-                  className="text-xs bg-[#031E49] hover:bg-[#0D2A5E] disabled:opacity-60 text-white px-3 py-1 rounded transition-colors"
+                  className="text-xs bg-[text-bmw-text_primary] hover:bg-[#0D2A5E] disabled:opacity-60 text-white px-3 py-1 rounded transition-colors"
                 >
                   {researching ? 'Researching…' : 'Full re-research'}
                 </button>
@@ -337,8 +337,8 @@ export default function CompanyDetail({ companyId, onClose }) {
                     <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap leading-relaxed ${
                         m.role === 'user'
-                          ? 'bg-[#4599FE] text-white'
-                          : 'bg-[#F0F4F8] text-gray-800 border border-[#B8CAD1]'
+                          ? 'bg-bmw-blue text-white'
+                          : 'bg-bmw-gray_light text-gray-800 border border-bmw-border'
                       }`}>
                         {m.text}
                       </div>
@@ -346,7 +346,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                   ))}
                   {chatLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-[#F0F4F8] border border-[#B8CAD1] rounded-lg px-3 py-2 text-sm text-gray-400 animate-pulse">
+                      <div className="bg-bmw-gray_light border border-bmw-border rounded-lg px-3 py-2 text-sm text-gray-400 animate-pulse">
                         Thinking…
                       </div>
                     </div>
@@ -364,12 +364,12 @@ export default function CompanyDetail({ companyId, onClose }) {
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
                   disabled={chatLoading}
-                  className="flex-1 border border-[#B8CAD1] rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4599FE] disabled:opacity-60"
+                  className="flex-1 border border-bmw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-bmw-blue disabled:opacity-60"
                 />
                 <button
                   onClick={handleChatSend}
                   disabled={chatLoading || !chatInput.trim()}
-                  className="bg-[#4599FE] hover:bg-[#3a88ee] disabled:opacity-60 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+                  className="bg-bmw-blue hover:bg-[#3a88ee] disabled:opacity-60 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
                 >
                   Send
                 </button>
@@ -396,7 +396,7 @@ function Info({ label, value }) {
   return (
     <div>
       <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">{label}</div>
-      <div className="text-sm text-[#031E49] mt-0.5">{value}</div>
+      <div className="text-sm text-[text-bmw-text_primary] mt-0.5">{value}</div>
     </div>
   )
 }

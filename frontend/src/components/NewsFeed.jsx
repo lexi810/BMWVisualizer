@@ -15,7 +15,7 @@ const CATEGORIES = [
 
 const CATEGORY_CONFIG = {
   funding:         { hex: '#10B981', bg: 'bg-emerald-100 text-emerald-800', grad: 'from-emerald-600 to-emerald-900' },
-  partnership:     { hex: '#4599FE', bg: 'bg-blue-100 text-blue-800',       grad: 'from-blue-600 to-blue-900' },
+  partnership:     { hex: 'bmw-blue', bg: 'bg-blue-100 text-blue-800',       grad: 'from-blue-600 to-blue-900' },
   'product launch':{ hex: '#8B5CF6', bg: 'bg-purple-100 text-purple-800',   grad: 'from-purple-600 to-purple-900' },
   facility:        { hex: '#F97316', bg: 'bg-orange-100 text-orange-800',   grad: 'from-orange-600 to-orange-900' },
   regulatory:      { hex: '#EF4444', bg: 'bg-red-100 text-red-800',         grad: 'from-red-600 to-red-900' },
@@ -81,18 +81,18 @@ export default function NewsFeed() {
   const sidebarPicks = news.slice(7, 15)
 
   return (
-    <div className="flex h-full overflow-hidden bg-[#F0F4F8]">
+    <div className="flex h-full overflow-hidden bg-bmw-gray_light">
 
       {/* Left sidebar — categories */}
-      <div className="w-48 bg-white border-r border-[#B8CAD1] flex flex-col shrink-0">
-        <div className="px-4 py-4 border-b border-[#B8CAD1]">
+      <div className="w-48 bg-white border-r border-bmw-border flex flex-col shrink-0">
+        <div className="px-4 py-4 border-b border-bmw-border">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Filter</div>
           <input
             type="text"
             placeholder="Search..."
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="mt-2 w-full border border-[#B8CAD1] rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#4599FE]"
+            className="mt-2 w-full border border-bmw-border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-bmw-blue"
           />
         </div>
         <nav className="flex-1 overflow-y-auto py-2">
@@ -102,8 +102,8 @@ export default function NewsFeed() {
               onClick={() => setActiveCategory(cat.key)}
               className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 ${
                 activeCategory === cat.key
-                  ? 'bg-[#E8F1FF] text-[#4599FE] font-semibold border-r-2 border-[#4599FE]'
-                  : 'text-gray-600 hover:bg-[#F0F4F8]'
+                  ? 'bg-[#E8F1FF] text-bmw-blue font-semibold border-r-2 border-bmw-blue'
+                  : 'text-gray-600 hover:bg-bmw-gray_light'
               }`}
             >
               {cat.key && (
@@ -116,7 +116,7 @@ export default function NewsFeed() {
             </button>
           ))}
         </nav>
-        <div className="px-4 py-3 border-t border-[#B8CAD1] text-xs text-gray-400">
+        <div className="px-4 py-3 border-t border-bmw-border text-xs text-gray-400">
           {news.length} articles
         </div>
       </div>
@@ -124,7 +124,7 @@ export default function NewsFeed() {
       {/* Main content */}
       <div className="flex-1 overflow-y-auto min-w-0">
         <div className="p-6 max-w-4xl">
-          <h2 className="text-xl font-bold text-[#031E49] mb-5">Battery Industry Intelligence</h2>
+          <h2 className="text-xl font-bold text-[text-bmw-text_primary] mb-5">Battery Industry Intelligence</h2>
 
           {loading ? (
             <div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>
@@ -138,7 +138,7 @@ export default function NewsFeed() {
               {/* Featured article */}
               {featured && (
                 <div
-                  className="bg-white rounded-xl border border-[#B8CAD1] overflow-hidden mb-6 cursor-pointer hover:shadow-lg transition-shadow"
+                  className="bg-white rounded-xl border border-bmw-border overflow-hidden mb-6 cursor-pointer hover:shadow-lg transition-shadow"
                   onClick={() => setSelectedArticle(featured)}
                 >
                   <div className="flex">
@@ -150,10 +150,10 @@ export default function NewsFeed() {
                             {featured.category || 'news'}
                           </span>
                           {featured.company_name && (
-                            <span className="text-xs font-semibold text-[#4599FE]">{featured.company_name}</span>
+                            <span className="text-xs font-semibold text-bmw-blue">{featured.company_name}</span>
                           )}
                         </div>
-                        <h3 className="text-lg font-bold text-[#031E49] leading-snug mb-2">
+                        <h3 className="text-lg font-bold text-[text-bmw-text_primary] leading-snug mb-2">
                           {featured.news_headline}
                         </h3>
                         {featured.summary && (
@@ -167,7 +167,7 @@ export default function NewsFeed() {
                         {featured.news_source && <span>· {featured.news_source}</span>}
                         {featured.url && (
                           <a href={featured.url} target="_blank" rel="noreferrer"
-                            className="ml-auto text-[#4599FE] hover:underline"
+                            className="ml-auto text-bmw-blue hover:underline"
                             onClick={e => e.stopPropagation()}>
                             Read source
                           </a>
@@ -185,7 +185,7 @@ export default function NewsFeed() {
                     <div
                       key={article.id}
                       onClick={() => setSelectedArticle(article)}
-                      className="bg-white rounded-xl border border-[#B8CAD1] overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                      className="bg-white rounded-xl border border-bmw-border overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                     >
                       <ArticleImage category={article.category} className="w-full h-28" size="sm" />
                       <div className="p-3">
@@ -194,7 +194,7 @@ export default function NewsFeed() {
                             {article.category || 'news'}
                           </span>
                         </div>
-                        <h4 className="text-sm font-semibold text-[#031E49] leading-snug line-clamp-3">
+                        <h4 className="text-sm font-semibold text-[text-bmw-text_primary] leading-snug line-clamp-3">
                           {article.news_headline}
                         </h4>
                         <div className="flex items-center gap-1.5 mt-2 text-[11px] text-gray-400">
@@ -214,7 +214,7 @@ export default function NewsFeed() {
                     <div
                       key={article.id}
                       onClick={() => setSelectedArticle(article)}
-                      className="bg-white rounded-lg border border-[#B8CAD1] px-4 py-3 flex items-start gap-4 cursor-pointer hover:shadow-sm transition-shadow"
+                      className="bg-white rounded-lg border border-bmw-border px-4 py-3 flex items-start gap-4 cursor-pointer hover:shadow-sm transition-shadow"
                     >
                       <ArticleImage category={article.category} className="w-16 h-16 rounded shrink-0" size="sm" />
                       <div className="flex-1 min-w-0">
@@ -223,10 +223,10 @@ export default function NewsFeed() {
                             {article.category}
                           </span>
                           {article.company_name && (
-                            <span className="text-xs text-[#4599FE] font-medium truncate">{article.company_name}</span>
+                            <span className="text-xs text-bmw-blue font-medium truncate">{article.company_name}</span>
                           )}
                         </div>
-                        <h4 className="text-sm font-semibold text-[#031E49] leading-snug line-clamp-2">
+                        <h4 className="text-sm font-semibold text-[text-bmw-text_primary] leading-snug line-clamp-2">
                           {article.news_headline}
                         </h4>
                         <div className="text-xs text-gray-400 mt-1">
@@ -243,16 +243,16 @@ export default function NewsFeed() {
       </div>
 
       {/* Right sidebar — Latest Highlights */}
-      <div className="w-64 bg-white border-l border-[#B8CAD1] flex flex-col shrink-0">
-        <div className="px-4 py-4 border-b border-[#B8CAD1]">
-          <h3 className="font-bold text-sm text-[#031E49]">Latest Highlights</h3>
+      <div className="w-64 bg-white border-l border-bmw-border flex flex-col shrink-0">
+        <div className="px-4 py-4 border-b border-bmw-border">
+          <h3 className="font-bold text-sm text-[text-bmw-text_primary]">Latest Highlights</h3>
         </div>
-        <div className="flex-1 overflow-y-auto divide-y divide-[#F0F4F8]">
+        <div className="flex-1 overflow-y-auto divide-y divide-bmw-gray_light">
           {sidebarPicks.map((article) => (
             <button
               key={article.id}
               onClick={() => setSelectedArticle(article)}
-              className="w-full text-left px-4 py-3 hover:bg-[#F0F4F8] transition-colors"
+              className="w-full text-left px-4 py-3 hover:bg-bmw-gray_light transition-colors"
             >
               <div className="flex items-start gap-2">
                 <span
@@ -260,7 +260,7 @@ export default function NewsFeed() {
                   style={{ backgroundColor: categoryColor(article.category) }}
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-[#031E49] leading-snug line-clamp-2">
+                  <p className="text-xs font-medium text-[text-bmw-text_primary] leading-snug line-clamp-2">
                     {article.news_headline}
                   </p>
                   <p className="text-[11px] text-gray-400 mt-1">
@@ -287,13 +287,13 @@ export default function NewsFeed() {
                   {selectedArticle.category}
                 </span>
                 {selectedArticle.company_name && (
-                  <span className="text-sm font-semibold text-[#4599FE]">{selectedArticle.company_name}</span>
+                  <span className="text-sm font-semibold text-bmw-blue">{selectedArticle.company_name}</span>
                 )}
                 <span className="text-xs text-gray-400 ml-auto">
                   {timeAgo(selectedArticle.date_of_article)}{selectedArticle.news_source ? ` · ${selectedArticle.news_source}` : ''}
                 </span>
               </div>
-              <h2 className="text-xl font-bold text-[#031E49] leading-snug mb-4">
+              <h2 className="text-xl font-bold text-[text-bmw-text_primary] leading-snug mb-4">
                 {selectedArticle.news_headline}
               </h2>
               {selectedArticle.summary && (
@@ -302,14 +302,14 @@ export default function NewsFeed() {
               {selectedArticle.topics?.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-4">
                   {selectedArticle.topics.map((t) => (
-                    <span key={t} className="text-xs bg-[#F0F4F8] text-gray-600 px-2 py-1 rounded-full">{t}</span>
+                    <span key={t} className="text-xs bg-bmw-gray_light text-gray-600 px-2 py-1 rounded-full">{t}</span>
                   ))}
                 </div>
               )}
-              <div className="flex items-center gap-3 mt-5 pt-4 border-t border-[#B8CAD1]">
+              <div className="flex items-center gap-3 mt-5 pt-4 border-t border-bmw-border">
                 {selectedArticle.url && (
                   <a href={selectedArticle.url} target="_blank" rel="noreferrer"
-                    className="text-sm text-[#4599FE] hover:underline font-medium">
+                    className="text-sm text-bmw-blue hover:underline font-medium">
                     Read full article
                   </a>
                 )}

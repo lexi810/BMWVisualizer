@@ -87,7 +87,7 @@ export default function App() {
   // If a company detail page is open, show it full screen
   if (detailCompanyId) {
     return (
-      <div className="flex flex-col h-screen overflow-hidden bg-[#F0F4F8]">
+      <div className="flex flex-col h-screen overflow-hidden bg-bmw-gray_light">
         <Navbar
           activeTab={activeTab}
           setActiveTab={(tab) => { setDetailCompanyId(null); setActiveTab(tab) }}
@@ -101,13 +101,13 @@ export default function App() {
           onClose={handleCloseCompanyPage}
           onOpenCompany={handleOpenCompanyPage}
           darkMode={darkMode}
-        />
+        />  
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-[#F0F4F8]">
+    <div className=\"flex flex-col h-screen overflow-hidden bg-bmw-gray_light\">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -119,13 +119,13 @@ export default function App() {
 
       {/* Seeding banner */}
       {seedBanner && (
-        <div className="bg-[#4599FE] text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-3">
+        <div className=\"bg-bmw-blue text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-3\">
           <span className="animate-spin"></span>
           Importing battery company database — this may take a few minutes on first run…
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden min-h-0">
+      <div className="flex flex-1 overflow-hidden min-h-0 bg-white">
         {/* Sidebar — only for map and table views */}
         {showSidebar && (
           <Sidebar

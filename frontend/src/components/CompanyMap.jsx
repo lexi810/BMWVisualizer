@@ -15,7 +15,7 @@ const TYPE_COLORS = {
   'Raw Materials': '#F59E0B',
   'Battery Grade Materials': '#EAB308',
   'Other Battery Components & Mat.': '#D97706',
-  'Electrode & Cell Manufacturing': '#4599FE',
+  'Electrode & Cell Manufacturing': 'bmw-blue',
   'Module-Pack Manufacturing': '#2563EB',
   'Recycling-Repurposing': '#10B981',
   'Equipment': '#06B6D4',
@@ -75,9 +75,9 @@ function PopupContent({ c, onSelectCompany }) {
   const isHQ = c.is_hq
   return (
     <div className="min-w-[200px]">
-      <div className="font-bold text-[#031E49] text-sm mb-1">{c.company_name}</div>
+      <div className="font-bold text-[text-bmw-text_primary] text-sm mb-1">{c.company_name}</div>
       {c.facility_name && (
-        <div className="text-xs text-[#4599FE] font-medium mb-1">{c.facility_name}</div>
+        <div className="text-xs text-bmw-blue font-medium mb-1">{c.facility_name}</div>
       )}
       <div className="text-xs text-gray-600 space-y-0.5">
         <div>
@@ -99,7 +99,7 @@ function PopupContent({ c, onSelectCompany }) {
         {c.chemistries && <div><span className="font-medium">Chemistries:</span> {c.chemistries}</div>}
         {c.company_website && (
           <div>
-            <a href={c.company_website} target="_blank" rel="noreferrer" className="text-[#4599FE] hover:underline">
+            <a href={c.company_website} target="_blank" rel="noreferrer" className="text-bmw-blue hover:underline">
               Website
             </a>
           </div>
@@ -107,7 +107,7 @@ function PopupContent({ c, onSelectCompany }) {
       </div>
       <button
         onClick={() => onSelectCompany(c.id)}
-        className="mt-2 w-full bg-[#4599FE] text-white text-xs py-1 rounded hover:bg-[#4599FE]"
+        className="mt-2 w-full bg-bmw-blue text-white text-xs py-1 rounded hover:bg-bmw-blue"
       >
         Company Details
       </button>
@@ -120,10 +120,10 @@ function PopupContent({ c, onSelectCompany }) {
 function Legend() {
   const [collapsed, setCollapsed] = React.useState(false)
   return (
-    <div className="absolute bottom-8 right-4 z-[1000] bg-white rounded-lg shadow-lg text-xs border border-[#B8CAD1] overflow-hidden">
+    <div className="absolute bottom-8 right-4 z-[1000] bg-white rounded-lg shadow-lg text-xs border border-bmw-border overflow-hidden">
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center justify-between w-full px-3 py-2 font-semibold text-[#031E49] hover:bg-[#F0F4F8]"
+        className="flex items-center justify-between w-full px-3 py-2 font-semibold text-[text-bmw-text_primary] hover:bg-bmw-gray_light"
       >
         <span>Company Type</span>
         <span className="ml-4 text-gray-400">{collapsed ? '▲' : '▼'}</span>
@@ -156,8 +156,8 @@ function HeatLegend() {
     { label: '1–4', color: '#3B82F6' },
   ]
   return (
-    <div className="absolute bottom-8 left-4 z-[1000] bg-white rounded-lg shadow-lg text-xs border border-[#B8CAD1] px-3 py-2">
-      <div className="font-semibold text-[#031E49] mb-1.5">Density</div>
+    <div className="absolute bottom-8 left-4 z-[1000] bg-white rounded-lg shadow-lg text-xs border border-bmw-border px-3 py-2">
+      <div className="font-semibold text-[text-bmw-text_primary] mb-1.5">Density</div>
       <div className="space-y-1">
         {bands.map(({ label, color }) => (
           <div key={label} className="flex items-center gap-2">
@@ -295,7 +295,7 @@ export default function CompanyMap({ filters, onSelectCompany, highlightName, da
         className={`absolute top-3 right-4 z-[1000] flex items-center gap-1.5 px-3 py-1.5 rounded-lg shadow text-xs font-semibold border transition-all ${
           heatmapMode
             ? 'bg-gradient-to-r from-red-500 to-orange-400 text-white border-red-400'
-            : 'bg-white text-gray-600 border-[#B8CAD1] hover:bg-[#F0F4F8]'
+            : 'bg-white text-gray-600 border-bmw-border hover:bg-bmw-gray_light'
         }`}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -306,7 +306,7 @@ export default function CompanyMap({ filters, onSelectCompany, highlightName, da
 
       {heatmapMode ? <HeatLegend /> : <Legend />}
 
-      <div className="absolute top-3 left-14 z-[1000] bg-white rounded shadow px-3 py-1.5 text-xs text-gray-600 border border-[#B8CAD1]">
+      <div className="absolute top-3 left-14 z-[1000] bg-white rounded shadow px-3 py-1.5 text-xs text-gray-600 border border-bmw-border">
         Showing <strong>{filtered.length}</strong> of <strong>{companies.length}</strong> locations
       </div>
     </div>
