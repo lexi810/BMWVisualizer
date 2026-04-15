@@ -10,14 +10,14 @@ import {
 } from '../api/client'
 
 const CATEGORY_COLORS = {
-  funding:     'bg-green-100 text-green-700',
-  partnership: 'bg-blue-100 text-blue-700',
-  regulatory:  'bg-purple-100 text-purple-700',
-  technology:  'bg-cyan-100 text-cyan-700',
-  expansion:   'bg-indigo-100 text-indigo-700',
-  leadership:  'bg-orange-100 text-orange-700',
-  financial:   'bg-yellow-100 text-yellow-700',
-  other:       'bg-gray-100 text-gray-600',
+  funding:     'bg-blue-50 text-bmw-blue',
+  partnership: 'bg-blue-50 text-bmw-blue',
+  regulatory:  'bg-red-50 text-red-700',
+  technology:  'bg-blue-50 text-bmw-blue',
+  expansion:   'bg-gray-100 text-bmw-text-secondary',
+  leadership:  'bg-gray-100 text-bmw-text-secondary',
+  financial:   'bg-gray-100 text-bmw-text-secondary',
+  other:       'bg-gray-100 text-bmw-gray-dark',
 }
 
 // Module-level cache so thumbnails persist across re-renders
@@ -28,6 +28,16 @@ function getFaviconUrl(url) {
     const domain = new URL(url).hostname.replace(/^www\./, '')
     return `https://www.google.com/s2/favicons?sz=64&domain=${domain}`
   } catch { return null }
+=======
+  funding: 'bg-blue-50 text-bmw-blue',
+  partnership: 'bg-blue-50 text-bmw-blue',
+  regulatory: 'bg-red-50 text-red-700',
+  technology: 'bg-blue-50 text-bmw-blue',
+  expansion: 'bg-gray-100 text-bmw-text-secondary',
+  leadership: 'bg-gray-100 text-bmw-text-secondary',
+  financial: 'bg-gray-100 text-bmw-text-secondary',
+  other: 'bg-gray-100 text-bmw-gray-dark',
+>>>>>>> f971c8e (Simplify category colors to match BMW's clean minimal aesthetic)
 }
 
 function ImportanceDots({ score }) {

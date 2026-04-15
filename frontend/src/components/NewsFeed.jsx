@@ -14,14 +14,14 @@ const CATEGORIES = [
 ]
 
 const CATEGORY_CONFIG = {
-  funding:         { hex: '#10B981', bg: 'bg-emerald-100 text-emerald-800', grad: 'from-emerald-600 to-emerald-900' },
-  partnership:     { hex: 'bmw-blue', bg: 'bg-blue-100 text-blue-800',       grad: 'from-blue-600 to-blue-900' },
-  'product launch':{ hex: '#8B5CF6', bg: 'bg-purple-100 text-purple-800',   grad: 'from-purple-600 to-purple-900' },
-  facility:        { hex: '#F97316', bg: 'bg-orange-100 text-orange-800',   grad: 'from-orange-600 to-orange-900' },
-  regulatory:      { hex: '#EF4444', bg: 'bg-red-100 text-red-800',         grad: 'from-red-600 to-red-900' },
-  research:        { hex: '#0EA5E9', bg: 'bg-sky-100 text-sky-800',         grad: 'from-sky-600 to-sky-900' },
-  market:          { hex: '#6366F1', bg: 'bg-indigo-100 text-indigo-800',   grad: 'from-indigo-600 to-indigo-900' },
-  other:           { hex: '#9CA3AF', bg: 'bg-gray-100 text-gray-700',       grad: 'from-gray-500 to-gray-800' },
+  funding:         { hex: '#1C69D4', bg: 'bg-blue-50 text-bmw-blue', grad: 'from-bmw-blue to-blue-900' },
+  partnership:     { hex: '#1C69D4', bg: 'bg-blue-50 text-bmw-blue',       grad: 'from-bmw-blue to-blue-900' },
+  'product launch':{ hex: '#666666', bg: 'bg-gray-50 text-bmw-text-secondary',   grad: 'from-gray-600 to-gray-800' },
+  facility:        { hex: '#B5BFCA', bg: 'bg-gray-100 text-bmw-gray-dark',   grad: 'from-gray-600 to-gray-800' },
+  regulatory:      { hex: '#E60105', bg: 'bg-red-50 text-red-700',         grad: 'from-red-600 to-red-800' },
+  research:        { hex: '#1C69D4', bg: 'bg-blue-50 text-bmw-blue',         grad: 'from-bmw-blue to-blue-900' },
+  market:          { hex: '#1C69D4', bg: 'bg-blue-50 text-bmw-blue',   grad: 'from-bmw-blue to-blue-900' },
+  other:           { hex: '#B5BFCA', bg: 'bg-gray-100 text-bmw-gray-dark',       grad: 'from-gray-500 to-gray-700' },
 }
 const DEFAULT_CONFIG = CATEGORY_CONFIG.other
 

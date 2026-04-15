@@ -63,20 +63,20 @@ const PARTNERSHIP_TYPE_LABELS = {
 }
 
 const STAGE_COLORS = {
-  announced: 'bg-yellow-100 text-yellow-800',
-  signed: 'bg-blue-100 text-blue-800',
-  active: 'bg-green-100 text-green-800',
-  dissolved: 'bg-red-100 text-red-800',
+  announced: 'bg-bmw-gray-light text-bmw-text-secondary',
+  signed: 'bg-blue-50 text-bmw-blue',
+  active: 'bg-green-50 text-green-700',
+  dissolved: 'bg-red-50 text-red-700',
 }
 
 const CATEGORY_COLORS = {
-  funding: 'bg-green-100 text-green-800',
-  partnership: 'bg-blue-100 text-blue-800',
-  'product launch': 'bg-purple-100 text-purple-800',
-  facility: 'bg-orange-100 text-orange-800',
-  regulatory: 'bg-red-100 text-red-800',
-  research: 'bg-teal-100 text-teal-800',
-  other: 'bg-gray-100 text-gray-700',
+  funding: 'bg-blue-50 text-bmw-blue',
+  partnership: 'bg-blue-50 text-bmw-blue',
+  'product launch': 'bg-gray-100 text-bmw-text-secondary',
+  facility: 'bg-gray-100 text-bmw-text-secondary',
+  regulatory: 'bg-red-50 text-red-700',
+  research: 'bg-blue-50 text-bmw-blue',
+  other: 'bg-gray-100 text-bmw-gray-dark',
 }
 
 /* ── Main Component ── */
