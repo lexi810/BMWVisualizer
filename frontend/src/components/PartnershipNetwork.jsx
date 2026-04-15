@@ -1,13 +1,16 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { getPartnershipGraph, getCompaniesNetwork, enrichPartnershipNetwork, getJob } from '../api/client'
 
 /* ── Constants ── */
 
+const INVESTOR_META_ID = '__investors__'
+
 const TYPE_COLORS = {
+  'investors_group':                { border: '#F59E0B', light: '#FEF3C7', dark: '#92400E' },
   'Raw Materials':                  { border: '#F59E0B', light: '#FDE68A', dark: '#D97706' },
   'Battery Grade Materials':        { border: '#EAB308', light: '#FEF08A', dark: '#CA8A04' },
   'Other Battery Components & Mat.':{ border: '#D97706', light: '#FCD34D', dark: '#B45309' },
-  'Electrode & Cell Manufacturing': { border: 'bmw-blue', light: '#93C5FD', dark: '#2563EB' },
+  'Electrode & Cell Manufacturing': { border: '#1C69D4', light: '#93C5FD', dark: '#2563EB' },
   'Module-Pack Manufacturing':      { border: '#2563EB', light: '#93C5FD', dark: '#1D4ED8' },
   'Recycling-Repurposing':          { border: '#10B981', light: '#6EE7B7', dark: '#059669' },
   'Equipment':                      { border: '#06B6D4', light: '#67E8F9', dark: '#0891B2' },
@@ -65,12 +68,21 @@ const HIERARCHY_ORDER = {
 
 /* ── Helpers ── */
 
-function typeColors(type, isDark) {
-  const c = TYPE_COLORS[type] || TYPE_COLORS.other
-  return { fill: isDark ? c.dark : c.light, border: c.border }
+function hashColor(str) {
+  let h = 0
+  for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0
+  const hue = ((h >>> 0) % 12) * 30
+  return { fill: `hsl(${hue}, 55%, 70%)`, border: `hsl(${hue}, 55%, 42%)` }
+}
+
+function typeColors(type, isDark, name = '') {
+  const c = TYPE_COLORS[type]
+  if (c) return { fill: isDark ? c.dark : c.light, border: c.border }
+  return hashColor(name || type || 'x')
 }
 
 function nodeRadius(node, metric, maxValues) {
+  if (node._investorList) return 28  // investor meta-node: fixed prominent size
   if (node.in_db === false) return 5
   const v = node[metric]
   if (v != null && v > 0 && maxValues[metric]) {
@@ -86,13 +98,12 @@ function nodeRadius(node, metric, maxValues) {
 function linkColor(type, date, isDark) {
   const info = LINK_TYPE_COLORS[type] || LINK_TYPE_COLORS.other
   const base = info.base
-  // Brighter = more recent
-  let alpha = isDark ? 0.4 : 0.5
+  let alpha = isDark ? 0.65 : 0.7
   if (date) {
     const year = parseInt(date)
-    if (year >= 2025) alpha = isDark ? 0.9 : 1.0
-    else if (year >= 2023) alpha = isDark ? 0.7 : 0.8
-    else if (year >= 2020) alpha = isDark ? 0.5 : 0.6
+    if (year >= 2025) alpha = 1.0
+    else if (year >= 2023) alpha = isDark ? 0.85 : 0.88
+    else if (year >= 2020) alpha = isDark ? 0.75 : 0.78
   }
   return { color: base, alpha }
 }
@@ -122,11 +133,25 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
   // Controls
   const [searchQuery, setSearchQuery] = useState('')
   const [scaleMetric, setScaleMetric] = useState('employee_count')
-  const [hoveredNode, setHoveredNode] = useState(null)
-  const [hoveredLink, setHoveredLink] = useState(null)
+  const [panMode, setPanMode] = useState(false)   // when true: drag pans canvas; nodes not moveable
+  // hoveredNodeRef: used inside canvas paintNode callback (stable ref, no re-render)
+  // tooltipSetterRef: imperative channel to HoverTooltip — avoids triggering parent re-renders on hover
+  const hoveredNodeRef = useRef(null)
+  const tooltipSetterRef = useRef(null)
+  const clickedNodeRef = useRef(null)   // mirrors clickedNode state for canvas use
+
+  // Clicked-node detail panel
+  const [clickedNode, setClickedNode] = useState(null)
+  // Keep ref in sync so paintNode can read it without being in the deps array
+  clickedNodeRef.current = clickedNode
+
+  // Clicked-link detail panel
+  const [clickedLink, setClickedLink] = useState(null)
 
   // Filter state
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [investorPanelOpen, setInvestorPanelOpen] = useState(false)
+  const [investorGroup, setInvestorGroup] = useState([])
   const [filterTypes, setFilterTypes] = useState([])       // partnership types
   const [filterStages, setFilterStages] = useState([])
   const [filterSegments, setFilterSegments] = useState([])
@@ -186,7 +211,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
       .finally(() => setLoading(false))
   }, [])
 
-  // Resize observer
+  // Resize observer — must re-run when FG/loading change so containerRef is populated
   useEffect(() => {
     if (!containerRef.current) return
     const obs = new ResizeObserver(([entry]) => {
@@ -195,32 +220,36 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
     })
     obs.observe(containerRef.current)
     return () => obs.disconnect()
-  }, [])
+  }, [FG, loading])
 
-  // Configure forces with hierarchical bias
+  // Re-fit whenever the container is resized
+  useEffect(() => {
+    const t = setTimeout(() => fgRef.current?.zoomToFit(400, 60), 200)
+    return () => clearTimeout(t)
+  }, [dims])
+
+  // Configure forces with hierarchical bias — only runs when FG or graphData changes, not on resize
   useEffect(() => {
     const fg = fgRef.current
     if (!fg) return
     const t = setTimeout(() => {
-      fg.d3Force('charge')?.strength(-400).distanceMax(600)
-      fg.d3Force('center')?.strength(0.1)
+      fg.d3Force('charge')?.strength(-300).distanceMax(500)
+      fg.d3Force('center')?.strength(0.08)
+      fg.d3Force('link')?.distance(80).strength(0.4)
 
       // Add vertical gravity bias for supply chain hierarchy
-      // react-force-graph exposes d3Force API — use forceY from loaded d3
       try {
         import('d3-force').then(d3 => {
+          const h = containerRef.current?.clientHeight || 600
           fg.d3Force('y', d3.forceY((node) => {
             const order = HIERARCHY_ORDER[node.type] ?? 3
-            return (order / 5) * dims.h * 0.6
-          }).strength(0.05))
-          fg.d3ReheatSimulation()
+            return (order / 5) * h * 0.5
+          }).strength(0.04))
         })
-      } catch (_) {
-        fg.d3ReheatSimulation()
-      }
+      } catch (_) {}
     }, 100)
     return () => clearTimeout(t)
-  }, [FG, graphData, dims.h])
+  }, [FG, graphData])
 
   useEffect(() => { fgRef.current?.refresh() }, [dark])
 
@@ -233,6 +262,13 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
     }
     return max
   }, [graphData.nodes])
+
+  // Detect unknowns for auto-classify nudge
+  const unknownCount = useMemo(() => {
+    const unknownNodes = graphData.nodes.filter(n => !n.type || n.type === 'other').length
+    const unknownLinks = graphData.links.filter(l => !l.type || l.type === 'other').length
+    return unknownNodes + unknownLinks
+  }, [graphData])
 
   /* ── Filtered graph ── */
   const filteredGraph = useMemo(() => {
@@ -323,6 +359,54 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
     return { nodes, links }
   }, [graphData, filterTypes, filterStages, filterDateFrom, filterDateTo, filterGeography, filterGovToggle, filterSegments, searchQuery])
 
+  /* ── Collapse investor nodes into one meta-bubble ── */
+  const isInvestorNode = (node) => {
+    const type = (node.type || '').toLowerCase()
+    const seg  = (node.industry_segment || '').toLowerCase()
+    return (
+      type.includes('invest') || seg.includes('invest') ||
+      type.includes('venture') || type.includes('private equity') ||
+      type.includes('angel') || type.includes('family office')
+    )
+  }
+
+  const displayGraph = useMemo(() => {
+    const investorNodes = filteredGraph.nodes.filter(isInvestorNode)
+    if (investorNodes.length < 2) return filteredGraph  // not enough to group
+
+    const investorIds = new Set(investorNodes.map(n => n.id))
+    const metaNode = {
+      id: INVESTOR_META_ID,
+      name: `Investors (${investorNodes.length})`,
+      type: 'investors_group',
+      in_db: true,
+      _investorList: investorNodes,
+      employee_count: investorNodes.length * 200,
+    }
+
+    const nodes = [
+      ...filteredGraph.nodes.filter(n => !investorIds.has(n.id)),
+      metaNode,
+    ]
+
+    const seenLinkKeys = new Set()
+    const links = filteredGraph.links
+      .map(l => {
+        const s = typeof l.source === 'object' ? l.source.id : l.source
+        const t = typeof l.target === 'object' ? l.target.id : l.target
+        const ns = investorIds.has(s) ? INVESTOR_META_ID : s
+        const nt = investorIds.has(t) ? INVESTOR_META_ID : t
+        if (ns === nt) return null
+        const key = `${[ns, nt].sort().join('::')}::${l.type}`
+        if (seenLinkKeys.has(key)) return null
+        seenLinkKeys.add(key)
+        return { ...l, source: ns, target: nt }
+      })
+      .filter(Boolean)
+
+    return { nodes, links }
+  }, [filteredGraph])  // eslint-disable-line react-hooks/exhaustive-deps
+
   // Re-fit on filter change
   useEffect(() => {
     fitDoneRef.current = false
@@ -330,37 +414,33 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
     return () => clearTimeout(t)
   }, [filteredGraph])
 
-  // Compute link curvatures for parallel edges
+  // Compute link curvatures for parallel edges (use displayGraph — what FG actually renders)
   useMemo(() => {
     const groups = {}
-    filteredGraph.links.forEach((link) => {
+    displayGraph.links.forEach((link) => {
       const s = typeof link.source === 'object' ? link.source.id : link.source
       const t = typeof link.target === 'object' ? link.target.id : link.target
-      const key = [Math.min(s, t), Math.max(s, t)].join('::')
+      const key = [s, t].sort().join('::')
       ;(groups[key] ??= []).push(link)
     })
     Object.values(groups).forEach((g) => {
       if (g.length === 1) { g[0]._curve = 0.15; return }
       g.forEach((l, i) => { l._curve = 0.08 + (i - (g.length - 1) / 2) * 0.12 })
     })
-  }, [filteredGraph.links])
-
-  const linkTypes = useMemo(
-    () => [...new Set(graphData.links.map(l => l.type).filter(Boolean))],
-    [graphData.links]
-  )
+  }, [displayGraph.links])
 
   /* ── Canvas: node ── */
   const paintNode = useCallback((node, ctx, globalScale) => {
     if (node.x == null || node.y == null) return
     const r = nodeRadius(node, scaleMetric, maxValues)
     const { fill, border } = node.in_db === false
-      ? { fill: dark ? '#1E293B' : '#E2E8F0', border: dark ? '#475569' : '#94A3B8' }
-      : typeColors(node.type, dark)
-    const isSearch = searchQuery && node.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const isHov = hoveredNode?.id === node.id
+      ? hashColor(node.name)
+      : typeColors(node.type, dark, node.name)
+    const isSearch  = searchQuery && node.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const isHov     = hoveredNodeRef.current?.id === node.id
+    const isClicked = clickedNodeRef.current?.id === node.id
 
-    // Glow
+    // Outer glow (hover / search)
     if (isHov || isSearch) {
       const g = ctx.createRadialGradient(node.x, node.y, r, node.x, node.y, r + 12)
       g.addColorStop(0, border + (dark ? '50' : '30'))
@@ -369,11 +449,20 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
       ctx.fillStyle = g; ctx.fill()
     }
 
+    // Selection ring (clicked node)
+    if (isClicked) {
+      ctx.beginPath(); ctx.arc(node.x, node.y, r + 5, 0, Math.PI * 2)
+      ctx.strokeStyle = '#EE0405'
+      ctx.lineWidth = 2.5
+      ctx.globalAlpha = 0.9
+      ctx.stroke(); ctx.globalAlpha = 1
+    }
+
     ctx.beginPath(); ctx.arc(node.x, node.y, r, 0, Math.PI * 2)
     ctx.fillStyle = fill; ctx.fill()
-    ctx.strokeStyle = border
-    ctx.lineWidth = isHov ? 2.5 : 1.2
-    ctx.globalAlpha = isHov ? 1 : 0.8
+    ctx.strokeStyle = isClicked ? '#EE0405' : border
+    ctx.lineWidth = (isHov || isClicked) ? 2.5 : 1.2
+    ctx.globalAlpha = (isHov || isClicked) ? 1 : 0.8
     ctx.stroke(); ctx.globalAlpha = 1
 
     // Dashed ring for external
@@ -384,7 +473,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
 
     // Label
     const fs = Math.max(4, Math.min(11, 10 / globalScale))
-    ctx.font = `${isHov ? 'bold ' : ''}${fs}px Inter, system-ui, sans-serif`
+    ctx.font = `${(isHov || isClicked) ? 'bold ' : ''}${fs}px Inter, system-ui, sans-serif`
     ctx.textAlign = 'center'; ctx.textBaseline = 'top'
     const label = node.name.length > 22 ? node.name.slice(0, 20) + '\u2026' : node.name
     const ty = node.y + r + 2.5 / globalScale
@@ -392,11 +481,11 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
     ctx.fillStyle = dark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)'
     ctx.fillText(label, node.x + 0.5 / globalScale, ty + 0.5 / globalScale)
     ctx.fillStyle = dark
-      ? (isHov ? '#fff' : 'rgba(255,255,255,0.8)')
-      : (isHov ? '#0F172A' : '#374151')
+      ? ((isHov || isClicked) ? '#fff' : 'rgba(255,255,255,0.8)')
+      : ((isHov || isClicked) ? '#0F172A' : '#374151')
     ctx.fillText(label, node.x, ty)
     ctx.textBaseline = 'alphabetic'
-  }, [searchQuery, hoveredNode, scaleMetric, dark, maxValues])
+  }, [searchQuery, scaleMetric, dark, maxValues])  // hoveredNode + clickedNode read via refs — no re-ticking
 
   /* ── Canvas: link ── */
   const paintLink = useCallback((link, ctx, globalScale) => {
@@ -417,7 +506,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
     const { color, alpha } = linkColor(link.type, link.date, dark)
 
     ctx.strokeStyle = color
-    ctx.lineWidth = Math.max(0.6, 1.2 / globalScale)
+    ctx.lineWidth = Math.max(1.5, 3.0 / globalScale)
     ctx.globalAlpha = alpha
     ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.quadraticCurveTo(cpX, cpY, t.x, t.y); ctx.stroke()
 
@@ -469,14 +558,14 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
     return (
       <div className={`flex flex-col items-center justify-center h-full gap-3 ${dark ? 'bg-[#0D1B2E]' : 'bg-bmw-gray-light'}`}>
         <div className={`text-lg font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>No partnership data yet</div>
-        <div className={`text-sm text-center max-w-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
-          Go to the Research tab and run "Research a Company" or upload PitchBook/Crunchbase data to populate partnerships.
+        <div className={`text-sm text-center max-w-sm ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
+          The network only shows companies with known partnerships. Go to the Research tab, run "Research a Company", or use "Classify All" above to populate connections.
         </div>
       </div>
     )
   }
 
-  const bg = dark ? '#0D1B2E' : 'bmw-gray-light'
+  const bg = dark ? '#0D1B2E' : '#F5F7FA'
   const panelBg = dark ? 'bg-[#0F1D2F]' : 'bg-white'
   const borderClr = dark ? 'border-gray-700' : 'border-bmw-border'
   const textMuted = dark ? 'text-gray-400' : 'text-gray-500'
@@ -612,6 +701,42 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
             Filters
           </button>
 
+          {/* Zoom controls */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => { const fg = fgRef.current; if (fg) fg.zoom(fg.zoom() * 1.4, 300) }}
+              title="Zoom in"
+              className={`w-7 h-7 flex items-center justify-center rounded border text-base font-bold transition-colors ${
+                dark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-bmw-border text-gray-600 hover:bg-bmw-gray-light'
+              }`}
+            >+</button>
+            <button
+              onClick={() => { const fg = fgRef.current; if (fg) fg.zoom(fg.zoom() / 1.4, 300) }}
+              title="Zoom out"
+              className={`w-7 h-7 flex items-center justify-center rounded border text-base font-bold transition-colors ${
+                dark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-bmw-border text-gray-600 hover:bg-bmw-gray-light'
+              }`}
+            >−</button>
+          </div>
+
+          {/* Pan mode toggle */}
+          <button
+            onClick={() => setPanMode(p => !p)}
+            title={panMode ? 'Switch to node-drag mode' : 'Switch to pan/drag mode'}
+            className={`text-xs px-3 py-1.5 rounded border transition-colors flex items-center gap-1.5 ${
+              panMode
+                ? (dark ? 'bg-blue-600 text-white border-blue-600' : 'bg-bmw-blue text-white border-bmw-blue')
+                : (dark ? 'border-gray-600 text-gray-400 hover:border-blue-500' : 'border-bmw-border text-gray-600 hover:border-bmw-blue')
+            }`}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/>
+              <polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/>
+              <line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
+            </svg>
+            Pan
+          </button>
+
           {/* Classify All button */}
           <button
             onClick={classifyState === 'idle' || classifyState === 'done' || classifyState === 'error' ? handleClassify : undefined}
@@ -669,31 +794,43 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
           </div>
         </div>
 
+        {/* Auto-classify nudge — shown when unknowns exist and not already classifying */}
+        {unknownCount > 0 && classifyState === 'idle' && (
+          <div className={`flex items-center gap-3 px-4 py-1.5 text-xs border-b ${borderClr} ${dark ? 'bg-amber-900/20 text-amber-300' : 'bg-amber-50 text-amber-700'}`}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+            <span>{unknownCount} unclassified company/partnership type{unknownCount !== 1 ? 's' : ''} detected.</span>
+            <button
+              onClick={handleClassify}
+              className={`font-semibold underline hover:no-underline ${dark ? 'text-amber-200' : 'text-amber-800'}`}
+            >
+              Classify now
+            </button>
+          </div>
+        )}
+
         {/* Legend */}
-        <div className={`${dark ? 'bg-[#0D1B2E]' : 'bg-bmw-gray-light'} border-b ${borderClr} px-4 py-1.5 flex items-center gap-5 flex-wrap`}>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className={`text-xs font-medium ${textMuted} uppercase tracking-wider`}>Arrows:</span>
-            {Object.entries(LINK_TYPE_COLORS).map(([key, { base, label }]) => (
-              <div key={key} className="flex items-center gap-1">
-                <svg width="18" height="8" viewBox="0 0 18 8" className="inline-block">
-                  <path d="M1 7 Q9 -1 17 7" stroke={base} fill="none" strokeWidth="1.5" opacity="0.65" />
-                  <polygon points="17,7 13,5.5 14,8" fill={base} opacity="0.65" />
-                </svg>
-                <span className={`text-xs ${textNormal}`}>{label}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-1 ml-1">
-              <span className={`w-2.5 h-2.5 rounded-full inline-block border-2 border-dashed ${dark ? 'border-gray-500' : 'border-gray-400'}`} />
-              <span className={`text-xs ${textMuted}`}>External</span>
+        <div className={`${dark ? 'bg-[#0D1B2E]' : 'bg-bmw-gray-light'} border-b ${borderClr} px-4 py-1.5 flex items-center gap-4 flex-wrap`}>
+          <span className={`text-xs font-medium ${textMuted} uppercase tracking-wider shrink-0`}>Arrows:</span>
+          {Object.entries(LINK_TYPE_COLORS).map(([key, { base, label }]) => (
+            <div key={key} className="flex items-center gap-1">
+              <svg width="18" height="8" viewBox="0 0 18 8" className="inline-block shrink-0">
+                <path d="M1 7 Q9 -1 17 7" stroke={base} fill="none" strokeWidth="1.5" opacity="0.8" />
+                <polygon points="17,7 13,5.5 14,8" fill={base} opacity="0.8" />
+              </svg>
+              <span className={`text-xs ${textNormal} whitespace-nowrap`}>{label}</span>
             </div>
+          ))}
+          <div className="flex items-center gap-1">
+            <span className={`w-2.5 h-2.5 rounded-full inline-block border-2 border-dashed shrink-0 ${dark ? 'border-gray-500' : 'border-gray-400'}`} />
+            <span className={`text-xs ${textMuted}`}>External</span>
           </div>
         </div>
 
         {/* Graph canvas */}
-        <div ref={containerRef} className="flex-1 relative min-h-0">
+        <div ref={containerRef} className="flex-1 relative min-h-0" onWheel={(e) => e.stopPropagation()} style={{ cursor: panMode ? 'grab' : 'default' }}>
           <FG
             ref={fgRef}
-            graphData={filteredGraph}
+            graphData={displayGraph}
             width={dims.w}
             height={dims.h}
             nodeCanvasObject={paintNode}
@@ -701,21 +838,48 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
             linkCanvasObject={paintLink}
             linkCanvasObjectMode={() => 'replace'}
             nodePointerAreaPaint={pointerArea}
-            enableNodeDrag={true}
-            onNodeDrag={(node) => { node.fx = node.x; node.fy = node.y }}
+            enableNodeDrag={!panMode}
             onNodeDragEnd={(node) => { node.fx = node.x; node.fy = node.y }}
-            onNodeClick={(node) => { if (node.in_db !== false && onSelectCompany) onSelectCompany(node.id) }}
-            onNodeHover={(node) => setHoveredNode(node || null)}
+            onNodeClick={(node) => {
+              if (node.id === INVESTOR_META_ID) {
+                setInvestorGroup(node._investorList || [])
+                setInvestorPanelOpen(true)
+                setClickedNode(null)
+                clickedNodeRef.current = null
+                setClickedLink(null)
+              } else {
+                // Highlight node ring then navigate to company detail page
+                setClickedNode(node)
+                clickedNodeRef.current = node
+                fgRef.current?.refresh()
+                setClickedLink(null)
+                setInvestorPanelOpen(false)
+                if (node.in_db !== false) {
+                  onSelectCompany?.(node.id)
+                }
+              }
+            }}
+            onLinkClick={(link) => {
+              setClickedLink(link)
+              setClickedNode(null)
+              clickedNodeRef.current = null
+              setInvestorPanelOpen(false)
+              fgRef.current?.refresh()
+            }}
+            onNodeHover={(node) => {
+              hoveredNodeRef.current = node || null
+              fgRef.current?.refresh()        // repaint glow without re-rendering React tree
+              tooltipSetterRef.current?.(node || null)
+            }}
             backgroundColor={bg}
-            cooldownTicks={250}
-            d3AlphaDecay={0.015}
-            d3VelocityDecay={0.35}
-            d3AlphaMin={0.002}
-            warmupTicks={50}
+            cooldownTicks={150}
+            d3AlphaDecay={0.04}
+            d3VelocityDecay={0.4}
+            d3AlphaMin={0.005}
+            warmupTicks={30}
             onEngineStop={() => {
               if (fitDoneRef.current) return
               fitDoneRef.current = true
-              filteredGraph.nodes.forEach((n) => { n.fx = n.x; n.fy = n.y })
               fgRef.current?.zoomToFit(400, 60)
             }}
           />
@@ -732,38 +896,52 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
             Fit All
           </button>
 
-          {/* Tooltip */}
-          {hoveredNode && (
-            <div className={`absolute top-4 left-4 rounded-xl shadow-lg px-4 py-3 text-sm border pointer-events-none max-w-[260px]
+          {/* Tooltip — isolated component so hover never re-renders the parent/FG */}
+          <HoverTooltip listenRef={tooltipSetterRef} dark={dark} />
+
+          {/* Link click panel — shows partnership details */}
+          {clickedLink && (
+            <LinkDetailPanel
+              link={clickedLink}
+              dark={dark}
+              onClose={() => setClickedLink(null)}
+              onOpenCompany={(id) => { setClickedLink(null); onSelectCompany?.(id) }}
+            />
+          )}
+
+          {/* Interaction hint */}
+          <div className={`absolute bottom-4 right-4 text-[10px] pointer-events-none select-none ${dark ? 'text-gray-600' : 'text-gray-400'}`}>
+            {panMode ? 'Pan mode: drag to pan · Scroll to zoom' : 'Scroll to zoom · Click node to view company · Click link for details'}
+          </div>
+
+          {/* Investor panel */}
+          {investorPanelOpen && investorGroup.length > 0 && (
+            <div className={`absolute top-4 right-4 z-20 rounded-xl shadow-lg border w-60 overflow-hidden
               ${dark ? 'bg-[#1E293B] border-gray-600' : 'bg-white border-bmw-border'}`}
             >
-              <div className={`font-semibold leading-tight ${dark ? 'text-gray-100' : 'text-[text-bmw-text-primary]'}`}>
-                {hoveredNode.name}
+              <div className={`flex items-center justify-between px-3 py-2 border-b ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <span className={`text-xs font-semibold ${dark ? 'text-gray-200' : 'text-gray-700'}`}>
+                  Investors ({investorGroup.length})
+                </span>
+                <button
+                  onClick={() => setInvestorPanelOpen(false)}
+                  className={`text-xs leading-none ${dark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
+                >✕</button>
               </div>
-              {hoveredNode.in_db === false && (
-                <div className="text-xs text-amber-500 font-medium mt-0.5">External partner</div>
-              )}
-              {hoveredNode.type && hoveredNode.type !== 'other' && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: typeColors(hoveredNode.type, dark).fill }} />
-                  <span className={`text-xs ${textMuted}`}>{hoveredNode.type}</span>
-                </div>
-              )}
-              {hoveredNode.industry_segment && (
-                <div className={`text-xs mt-0.5 ${dark ? 'text-gray-500' : 'text-gray-400'}`}>{hoveredNode.industry_segment}</div>
-              )}
-              {hoveredNode.in_db !== false && (
-                <div className="mt-2 space-y-0.5">
-                  {hoveredNode.employee_count != null && <HRow dark={dark} label="Employees" value={hoveredNode.employee_count.toLocaleString()} />}
-                  {hoveredNode.revenue_usd != null && <HRow dark={dark} label="Revenue" value={fmtVal(hoveredNode.revenue_usd)} />}
-                  {hoveredNode.market_cap_usd != null && <HRow dark={dark} label="Market Cap" value={fmtVal(hoveredNode.market_cap_usd)} />}
-                  {hoveredNode.total_funding_usd != null && <HRow dark={dark} label="Funding" value={fmtVal(hoveredNode.total_funding_usd)} />}
-                  {hoveredNode.manufacturing_capacity_gwh != null && <HRow dark={dark} label="Capacity" value={`${hoveredNode.manufacturing_capacity_gwh} GWh`} />}
-                </div>
-              )}
-              {hoveredNode.in_db !== false && (
-                <div className="text-xs text-bmw-blue mt-2">Click to open profile</div>
-              )}
+              <div className="max-h-64 overflow-y-auto">
+                {investorGroup.map(n => (
+                  <button
+                    key={n.id}
+                    onClick={() => { if (n.in_db !== false && onSelectCompany) { setInvestorPanelOpen(false); onSelectCompany(n.id) } }}
+                    className={`w-full text-left px-3 py-1.5 text-xs border-b last:border-0 transition-colors
+                      ${dark ? 'border-gray-700 text-gray-300 hover:bg-[#2D3B4F]' : 'border-gray-100 text-gray-700 hover:bg-gray-50'}
+                      ${n.in_db !== false ? 'cursor-pointer' : 'cursor-default opacity-60'}`}
+                  >
+                    {n.name}
+                    {n.in_db === false && <span className={`ml-1 text-[10px] ${dark ? 'text-gray-500' : 'text-gray-400'}`}>(external)</span>}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -773,6 +951,143 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
 }
 
 /* ── Sub-components ── */
+
+/**
+ * LinkDetailPanel — shown when a user clicks a partnership connection line.
+ * Displays deal details and lets the user navigate to either company's full profile.
+ */
+function LinkDetailPanel({ link, dark, onClose, onOpenCompany }) {
+  const src = typeof link.source === 'object' ? link.source : { id: link.source, name: String(link.source), in_db: false }
+  const tgt = typeof link.target === 'object' ? link.target : { id: link.target, name: String(link.target), in_db: false }
+  const typeInfo = LINK_TYPE_COLORS[link.type] || LINK_TYPE_COLORS.other
+
+  const panelBg = dark ? 'bg-[#1E293B] border-gray-600' : 'bg-white border-bmw-border'
+  const headBg  = dark ? 'bg-[#263345] border-gray-700' : 'bg-[#F7F9FB] border-gray-200'
+  const textPri = dark ? 'text-gray-100' : 'text-gray-800'
+  const textMut = dark ? 'text-gray-400' : 'text-gray-500'
+  const detailBg = dark ? 'bg-[#1A2535] border-gray-700' : 'bg-gray-50 border-gray-100'
+
+  const CompanyCard = ({ company }) => (
+    <button
+      onClick={() => company.in_db !== false && onOpenCompany?.(company.id)}
+      className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors ${
+        company.in_db !== false
+          ? (dark ? 'border-gray-600 hover:bg-[#2D3B4F] cursor-pointer' : 'border-gray-200 hover:bg-blue-50 cursor-pointer')
+          : (dark ? 'border-gray-700 opacity-60 cursor-default' : 'border-gray-100 opacity-60 cursor-default')
+      }`}
+    >
+      <div className={`text-sm font-semibold leading-tight ${textPri}`}>{company.name}</div>
+      {company.in_db === false
+        ? <div className={`text-xs mt-0.5 ${textMut}`}>External partner</div>
+        : <div className="text-xs mt-0.5 text-bmw-blue">Click to view full profile →</div>
+      }
+    </button>
+  )
+
+  return (
+    <div className={`absolute top-4 right-4 z-20 rounded-xl shadow-xl border w-80 overflow-hidden ${panelBg}`}>
+      {/* Header */}
+      <div className={`px-4 py-3 border-b flex items-center justify-between ${headBg}`}>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: typeInfo.base }} />
+          <span className={`font-bold text-sm ${textPri}`}>{typeInfo.label}</span>
+        </div>
+        <button onClick={onClose} className={`text-lg leading-none ${textMut} hover:text-red-400`}>✕</button>
+      </div>
+
+      {/* Companies */}
+      <div className="px-4 py-3 space-y-2">
+        <div className={`text-[10px] font-semibold uppercase tracking-wider mb-2 ${textMut}`}>Partnership Between</div>
+        <CompanyCard company={src} />
+        <div className="flex items-center justify-center py-0.5">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={typeInfo.base} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+          </svg>
+        </div>
+        <CompanyCard company={tgt} />
+      </div>
+
+      {/* Deal details */}
+      <div className={`px-4 py-3 border-t space-y-2 ${detailBg}`}>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="text-[11px] px-2 py-0.5 rounded-full font-medium text-white" style={{ backgroundColor: typeInfo.base }}>
+            {typeInfo.label}
+          </span>
+          {link.stage && (
+            <span className={`text-[11px] px-2 py-0.5 rounded-full capitalize ${
+              link.stage === 'active'    ? 'bg-green-100 text-green-700' :
+              link.stage === 'signed'    ? 'bg-blue-100 text-blue-700' :
+              link.stage === 'announced' ? 'bg-yellow-100 text-yellow-700' :
+              link.stage === 'dissolved' ? 'bg-red-100 text-red-700' :
+                                           'bg-gray-100 text-gray-600'
+            }`}>{link.stage}</span>
+          )}
+          {link.date && <span className={`text-[11px] ${textMut}`}>{link.date}</span>}
+        </div>
+        {link.deal_value != null && (
+          <div className="flex justify-between items-center">
+            <span className={`text-xs ${textMut}`}>Deal Value</span>
+            <span className={`text-sm font-bold ${textPri}`}>{fmtVal(link.deal_value)}</span>
+          </div>
+        )}
+        {link.scope && (
+          <p className={`text-xs leading-relaxed ${textMut}`}>{link.scope}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * HoverTooltip — owns its own state so hover updates never re-render the parent.
+ * Parent hands down a `listenRef`: setting listenRef.current = setNode wires the channel.
+ * onNodeHover calls listenRef.current(node) imperatively — zero parent re-renders.
+ */
+function HoverTooltip({ listenRef, dark }) {
+  const [node, setNode] = useState(null)
+  useEffect(() => {
+    listenRef.current = setNode
+    return () => { listenRef.current = null }
+  }, [listenRef])
+
+  if (!node) return null
+  const panelBg = dark ? 'bg-[#1E293B] border-gray-600' : 'bg-white border-bmw-border'
+  const textMuted = dark ? 'text-gray-400' : 'text-gray-500'
+  return (
+    <div className={`absolute top-4 left-4 rounded-xl shadow-lg px-4 py-3 text-sm border pointer-events-none max-w-[260px] ${panelBg}`}>
+      <div className={`font-semibold leading-tight ${dark ? 'text-gray-100' : 'text-gray-800'}`}>
+        {node.name}
+      </div>
+      {node.in_db === false && (
+        <div className="text-xs text-amber-500 font-medium mt-0.5">External partner</div>
+      )}
+      {node.type && node.type !== 'other' && node.id !== INVESTOR_META_ID && (
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: typeColors(node.type, dark, node.name).fill }} />
+          <span className={`text-xs ${textMuted}`}>{node.type}</span>
+        </div>
+      )}
+      {node.industry_segment && (
+        <div className={`text-xs mt-0.5 ${dark ? 'text-gray-500' : 'text-gray-400'}`}>{node.industry_segment}</div>
+      )}
+      {node.in_db !== false && (
+        <div className="mt-2 space-y-0.5">
+          {node.employee_count != null && <HRow dark={dark} label="Employees" value={node.employee_count.toLocaleString()} />}
+          {node.revenue_usd != null && <HRow dark={dark} label="Revenue" value={fmtVal(node.revenue_usd)} />}
+          {node.market_cap_usd != null && <HRow dark={dark} label="Market Cap" value={fmtVal(node.market_cap_usd)} />}
+          {node.total_funding_usd != null && <HRow dark={dark} label="Funding" value={fmtVal(node.total_funding_usd)} />}
+          {node.manufacturing_capacity_gwh != null && <HRow dark={dark} label="Capacity" value={`${node.manufacturing_capacity_gwh} GWh`} />}
+        </div>
+      )}
+      {node.id === INVESTOR_META_ID && (
+        <div className="text-xs text-bmw-blue mt-2">Click to see all investors</div>
+      )}
+      {node.in_db !== false && node.id !== INVESTOR_META_ID && (
+        <div className="text-xs text-bmw-blue mt-2">Click to open profile</div>
+      )}
+    </div>
+  )
+}
 
 function HRow({ dark, label, value }) {
   return (

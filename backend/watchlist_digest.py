@@ -99,8 +99,8 @@ Articles:
 
 
 def run_digest_for_company(db, company_id: int, company_name: str) -> dict:
-    """Fetch news + AI score for one company, save to watchlist_digest."""
-    from backend.models import WatchlistDigest
+    """Fetch news + AI score for one company, save to watchlist_digest and news_headlines."""
+    from backend.models import NewsHeadline, WatchlistDigest
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     now = datetime.now(timezone.utc).isoformat()
@@ -132,6 +132,31 @@ def run_digest_for_company(db, company_id: int, company_name: str) -> dict:
         created_at=now,
     )
     db.add(digest)
+    db.flush()
+
+    # Also persist articles to news_headlines so they appear in the News Feed tab
+    existing_urls = {
+        n.url for n in
+        db.query(NewsHeadline.url)
+        .filter(NewsHeadline.company_id == company_id)
+        .all()
+        if n.url
+    }
+    for article in articles:
+        url = article.get("url", "")
+        if url and url in existing_urls:
+            continue  # skip duplicates
+        db.add(NewsHeadline(
+            company_id=company_id,
+            company_name=company_name,
+            news_headline=article.get("title", ""),
+            category=article.get("category", "other"),
+            url=url,
+            summary=article.get("snippet") or article.get("why", ""),
+            date_of_article=article.get("published_date", ""),
+            created_at=now,
+        ))
+
     db.commit()
 
     return {

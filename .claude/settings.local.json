@@ -24,7 +24,8 @@
       "Bash(wc -l /Users/portertien/Projects/BMW_data_visualizer/backend/*.py /Users/portertien/Projects/BMW_data_visualizer/backend/routes/*.py)",
       "Bash(npm ls:*)",
       "Bash(npm install:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(npx tsc *)"
     ]
   }
 }

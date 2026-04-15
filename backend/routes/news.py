@@ -3,8 +3,10 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from datetime import datetime, timezone
 
+import requests as req_lib
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -14,6 +16,9 @@ from backend.models import NewsHeadline, ResearchJob
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/news", tags=["news"])
+
+# In-process cache so each URL is fetched at most once per server run
+_thumb_cache: dict[str, str | None] = {}
 
 
 def _news_dict(n: NewsHeadline) -> dict:
@@ -32,6 +37,60 @@ def _news_dict(n: NewsHeadline) -> dict:
         "summary": n.summary,
         "created_at": n.created_at,
     }
+
+
+def _fetch_og_image(url: str) -> str | None:
+    """Extract og:image / twitter:image from a URL. Returns None on any failure."""
+    try:
+        r = req_lib.get(url, timeout=6, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; BMWDataBot/1.0)",
+            "Accept": "text/html",
+        }, allow_redirects=True, stream=True)
+        # Read only the first 60 KB — the <head> section is always near the top
+        html = b""
+        for chunk in r.iter_content(chunk_size=8192):
+            html += chunk
+            if len(html) >= 61440:
+                break
+        text = html.decode("utf-8", errors="replace")
+    except Exception:
+        return None
+
+    patterns = [
+        r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']{5,})["\']',
+        r'<meta[^>]+content=["\']([^"\']{5,})["\'][^>]+property=["\']og:image["\']',
+        r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']{5,})["\']',
+        r'<meta[^>]+content=["\']([^"\']{5,})["\'][^>]+name=["\']twitter:image["\']',
+    ]
+    for pat in patterns:
+        m = re.search(pat, text, re.I)
+        if m:
+            img = m.group(1).strip()
+            # Skip data URIs and tiny tracking pixels
+            if img.startswith("data:") or len(img) < 10:
+                continue
+            # Make relative URLs absolute
+            if img.startswith("//"):
+                img = "https:" + img
+            elif img.startswith("/"):
+                try:
+                    from urllib.parse import urlparse
+                    base = urlparse(url)
+                    img = f"{base.scheme}://{base.netloc}{img}"
+                except Exception:
+                    pass
+            return img
+    return None
+
+
+@router.get("/thumbnail")
+async def get_thumbnail(url: str):
+    """Return the og:image for an article URL (cached in memory)."""
+    if url in _thumb_cache:
+        return {"thumbnail_url": _thumb_cache[url]}
+    img = await asyncio.get_event_loop().run_in_executor(None, _fetch_og_image, url)
+    _thumb_cache[url] = img
+    return {"thumbnail_url": img}
 
 
 @router.get("")

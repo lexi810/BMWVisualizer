@@ -2,18 +2,37 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { getCompanyDetail, researchCompany, getJob, chatWithCompany } from '../api/client'
 
 /* ── Logo helper ── */
+function nameColor(name) {
+  let h = 0
+  for (let i = 0; i < (name || '').length; i++) h = (Math.imul(31, h) + name.charCodeAt(i)) | 0
+  const hue = ((h >>> 0) % 12) * 30
+  return `hsl(${hue}, 55%, 50%)`
+}
+
 function LogoImg({ website, name }) {
   const [failed, setFailed] = useState(false)
   let domain = ''
-  try { domain = new URL(website).hostname.replace('www.', '') } catch { return null }
-  if (failed || !domain) return null
+  try { domain = new URL(website).hostname.replace(/^www\./, '') } catch {}
+  const initials = (name || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?'
+  const bg = nameColor(name || '')
+
+  if (domain && !failed) {
+    return (
+      <img
+        src={`https://www.google.com/s2/favicons?sz=128&domain=${domain}`}
+        alt={name}
+        onError={() => setFailed(true)}
+        className="w-12 h-12 rounded-xl bg-white object-contain p-1.5 shrink-0 shadow-sm border border-white/20"
+      />
+    )
+  }
   return (
-    <img
-      src={`https://logo.clearbit.com/${domain}`}
-      alt={name}
-      onError={() => setFailed(true)}
-      className="w-14 h-14 rounded-xl bg-white object-contain p-1.5 shrink-0 shadow-sm"
-    />
+    <div
+      className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white font-bold shadow-sm select-none border border-white/20"
+      style={{ backgroundColor: bg, fontSize: '18px' }}
+    >
+      {initials}
+    </div>
   )
 }
 
@@ -467,10 +486,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span
-                          className="w-3 h-3 rounded-full shrink-0"
-                          style={{ backgroundColor: PARTNERSHIP_TYPE_COLORS[p.partnership_type] || '#94A3B8' }}
-                        />
+                        <span className="w-3 h-3 rounded-full shrink-0 bg-bmw-blue opacity-70" />
                         <div>
                           <div className="font-medium text-[text-bmw-text-primary] text-sm">{p.partnership_name || 'Partnership'}</div>
                           <div className="text-xs text-gray-500 mt-0.5">

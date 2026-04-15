@@ -33,6 +33,7 @@ export const getCompanyMetrics = (id) => api.get(`/companies/${id}/metrics`)
 // News
 export const getNews = (params) => api.get('/news', { params })
 export const searchNews = (company_name) => api.post('/news/search', { company_name })
+export const getArticleThumbnail = (url) => api.get('/news/thumbnail', { params: { url } })
 
 // Uploads
 export const uploadCSV = (file) => {

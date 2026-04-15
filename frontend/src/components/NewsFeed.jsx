@@ -145,12 +145,18 @@ export default function NewsFeed() {
                     <ArticleImage category={featured.category} className="w-72 h-48 shrink-0" />
                     <div className="flex-1 p-5 flex flex-col justify-between">
                       <div>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${categoryBg(featured.category)}`}>
                             {featured.category || 'news'}
                           </span>
                           {featured.company_name && (
                             <span className="text-xs font-semibold text-bmw-blue">{featured.company_name}</span>
+                          )}
+                          {featured.news_source && (
+                            <span className="text-xs text-gray-400">· {featured.news_source}</span>
+                          )}
+                          {featured.location && (
+                            <span className="text-xs text-gray-400">· {featured.location}</span>
                           )}
                         </div>
                         <h3 className="text-lg font-bold text-[text-bmw-text-primary] leading-snug mb-2">
@@ -189,10 +195,13 @@ export default function NewsFeed() {
                     >
                       <ArticleImage category={article.category} className="w-full h-28" size="sm" />
                       <div className="p-3">
-                        <div className="flex items-center gap-1.5 mb-1.5">
+                        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize ${categoryBg(article.category)}`}>
                             {article.category || 'news'}
                           </span>
+                          {article.company_name && (
+                            <span className="text-[10px] font-semibold text-bmw-blue">{article.company_name}</span>
+                          )}
                         </div>
                         <h4 className="text-sm font-semibold text-[text-bmw-text-primary] leading-snug line-clamp-3">
                           {article.news_headline}

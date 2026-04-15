@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { uploadCSV, uploadDocument, uploadPartnerships } from '../api/client'
+import { uploadCSV, uploadPartnerships } from '../api/client'
 
 function DropZone({ label, accept, onUpload, uploading }) {
   const inputRef = useRef()
@@ -60,9 +60,6 @@ export default function ResearchPanel() {
   const [csvUploading, setCsvUploading] = useState(false)
   const [csvResult, setCsvResult] = useState(null)
 
-  const [docUploading, setDocUploading] = useState(false)
-  const [docResult, setDocResult] = useState(null)
-
   const [pbUploading, setPbUploading] = useState(false)
   const [pbResult, setPbResult] = useState(null)
 
@@ -76,18 +73,6 @@ export default function ResearchPanel() {
       setCsvResult({ error: e.response?.data?.detail || e.message })
     }
     setCsvUploading(false)
-  }
-
-  async function handleDocUpload(file) {
-    setDocUploading(true)
-    setDocResult(null)
-    try {
-      const { data } = await uploadDocument(file)
-      setDocResult(data.result || data)
-    } catch (e) {
-      setDocResult({ error: e.response?.data?.detail || e.message })
-    }
-    setDocUploading(false)
   }
 
   async function handlePbUpload(file) {
@@ -108,7 +93,7 @@ export default function ResearchPanel() {
 
         <div>
           <h2 className="text-lg font-semibold text-[text-bmw-text-primary] mb-1">Data Import</h2>
-          <p className="text-sm text-gray-500">Upload company data from spreadsheets, documents, or platform exports.</p>
+          <p className="text-sm text-gray-500">Upload company data from spreadsheets or partnership network exports.</p>
         </div>
 
         {/* CSV / XLSX */}
@@ -135,15 +120,6 @@ export default function ResearchPanel() {
           <ResultBanner result={pbResult} onDismiss={() => setPbResult(null)} />
         </div>
 
-        {/* PDF / Document */}
-        <div className="bg-white rounded-xl border border-[#DDE4EA] p-6">
-          <h3 className="font-semibold text-[text-bmw-text-primary] mb-1">Document Import</h3>
-          <p className="text-xs text-gray-500 mb-4">
-            Upload a PDF, text file, or markdown document — conference papers, press releases, transcripts. Claude extracts companies, news, and proceedings automatically.
-          </p>
-          <DropZone label="PDF, TXT, or Markdown" accept=".pdf,.txt,.md" onUpload={handleDocUpload} uploading={docUploading} />
-          <ResultBanner result={docResult} onDismiss={() => setDocResult(null)} />
-        </div>
 
       </div>
     </div>

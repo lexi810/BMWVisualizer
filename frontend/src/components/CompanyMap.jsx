@@ -15,7 +15,7 @@ const TYPE_COLORS = {
   'Raw Materials': '#F59E0B',
   'Battery Grade Materials': '#EAB308',
   'Other Battery Components & Mat.': '#D97706',
-  'Electrode & Cell Manufacturing': 'bmw-blue',
+  'Electrode & Cell Manufacturing': '#1C69D4',
   'Module-Pack Manufacturing': '#2563EB',
   'Recycling-Repurposing': '#10B981',
   'Equipment': '#06B6D4',
@@ -210,14 +210,12 @@ export default function CompanyMap({ filters, onSelectCompany, highlightName, da
         center={[39.5, -98.35]}
         zoom={4}
         style={{ height: '100%', width: '100%' }}
-        maxBounds={[[-85, -180], [85, 180]]}
-        maxBoundsViscosity={1.0}
         worldCopyJump={false}
         zoomAnimation={true}
         zoomAnimationThreshold={4}
         wheelPxPerZoomLevel={120}
         wheelDebounceTime={80}
-        minZoom={3}
+        minZoom={1}
       >
         <TileLayer
           key={darkMode ? 'dark' : 'light'}
