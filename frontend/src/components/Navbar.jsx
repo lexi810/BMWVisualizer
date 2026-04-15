@@ -53,30 +53,30 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
     : 'Never'
 
   return (
-    <nav className="bg-bmw-navy select-none border-b border-bmw-navy-light" style={{ height: '44px' }}>
-      <div className="flex items-center h-full px-4 gap-6">
+    <nav className="bg-white select-none border-b border-bmw-border shadow-light" style={{ height: '56px' }}>
+      <div className="flex items-center h-full px-6 gap-8">
         {/* Logo + Title */}
-        <div className="flex items-center gap-2 min-w-fit">
+        <div className="flex items-center gap-3 min-w-fit">
           <img
             src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/600px-BMW.svg.png"
             alt="BMW"
-            className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
           />
-          <span className="text-white font-semibold text-sm whitespace-nowrap tracking-tight font-display">
-            BMW Battery Intelligence
+          <span className="text-bmw-navy font-bold text-base whitespace-nowrap tracking-tight font-display">
+            BMW Battery
           </span>
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center h-full flex-1 overflow-x-auto">
+        <div className="flex items-center h-full flex-1 overflow-x-auto gap-0.5">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`relative h-full px-4 text-sm whitespace-nowrap transition-colors ${
+              className={`relative h-full px-5 text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.id
-                  ? 'text-white'
-                  : 'text-bmw-gray-dark hover:text-white'
+                  ? 'text-bmw-blue'
+                  : 'text-bmw-text-secondary hover:text-bmw-text-primary'
               }`}
             >
               <span className="flex items-center gap-1.5">
@@ -86,21 +86,21 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
                 )}
               </span>
               {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-bmw-blue" />
+                <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-bmw-blue" />
               )}
             </button>
           ))}
         </div>
 
         {/* Sync badge */}
-        <div className="flex items-center gap-2 min-w-fit">
-          <span className="text-bmw-gray-dark text-xs whitespace-nowrap">
-            Synced: <span className="text-white">{lastSynced}</span>
+        <div className="flex items-center gap-3 min-w-fit">
+          <span className="text-bmw-text-secondary text-xs whitespace-nowrap">
+            Synced: <span className="text-bmw-text-primary font-medium">{lastSynced}</span>
           </span>
           <button
             onClick={handleSync}
             disabled={syncing}
-            className="border border-bmw-blue text-bmw-blue hover:bg-bmw-blue hover:text-white disabled:opacity-40 text-xs px-3 py-1 rounded transition-colors font-medium"
+            className="border-2 border-bmw-blue text-bmw-blue hover:bg-bmw-blue hover:text-white disabled:opacity-40 text-xs px-3 py-1.5 rounded font-medium transition-colors"
           >
             {syncing ? 'Syncing\u2026' : 'Sync Now'}
           </button>
@@ -110,10 +110,10 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
         <div className="relative" ref={settingsRef}>
           <button
             onClick={() => setSettingsOpen((o) => !o)}
-            className={`p-1.5 rounded transition-colors ${
+            className={`p-2 rounded transition-colors ${
               settingsOpen
-                ? 'bg-bmw-navy-light text-white'
-                : 'text-bmw-gray-dark hover:text-white'
+                ? 'bg-bmw-gray-light text-bmw-blue'
+                : 'text-bmw-text-secondary hover:text-bmw-blue'
             }`}
             title="Settings"
           >

@@ -107,7 +107,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-bmw-gray-light">
+    <div className="flex flex-col h-screen overflow-hidden bg-white">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
