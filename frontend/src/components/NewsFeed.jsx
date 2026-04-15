@@ -81,7 +81,7 @@ export default function NewsFeed() {
   const sidebarPicks = news.slice(7, 15)
 
   return (
-    <div className="flex h-full overflow-hidden bg-bmw-gray_light">
+    <div className="flex h-full overflow-hidden bg-bmw-gray-light">
 
       {/* Left sidebar — categories */}
       <div className="w-48 bg-white border-r border-bmw-border flex flex-col shrink-0">
@@ -103,7 +103,7 @@ export default function NewsFeed() {
               className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 ${
                 activeCategory === cat.key
                   ? 'bg-[#E8F1FF] text-bmw-blue font-semibold border-r-2 border-bmw-blue'
-                  : 'text-gray-600 hover:bg-bmw-gray_light'
+                  : 'text-gray-600 hover:bg-bmw-gray-light'
               }`}
             >
               {cat.key && (
@@ -124,7 +124,7 @@ export default function NewsFeed() {
       {/* Main content */}
       <div className="flex-1 overflow-y-auto min-w-0">
         <div className="p-6 max-w-4xl">
-          <h2 className="text-xl font-bold text-[text-bmw-text_primary] mb-5">Battery Industry Intelligence</h2>
+          <h2 className="text-xl font-bold text-[text-bmw-text-primary] mb-5">Battery Industry Intelligence</h2>
 
           {loading ? (
             <div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>
@@ -153,7 +153,7 @@ export default function NewsFeed() {
                             <span className="text-xs font-semibold text-bmw-blue">{featured.company_name}</span>
                           )}
                         </div>
-                        <h3 className="text-lg font-bold text-[text-bmw-text_primary] leading-snug mb-2">
+                        <h3 className="text-lg font-bold text-[text-bmw-text-primary] leading-snug mb-2">
                           {featured.news_headline}
                         </h3>
                         {featured.summary && (
@@ -194,7 +194,7 @@ export default function NewsFeed() {
                             {article.category || 'news'}
                           </span>
                         </div>
-                        <h4 className="text-sm font-semibold text-[text-bmw-text_primary] leading-snug line-clamp-3">
+                        <h4 className="text-sm font-semibold text-[text-bmw-text-primary] leading-snug line-clamp-3">
                           {article.news_headline}
                         </h4>
                         <div className="flex items-center gap-1.5 mt-2 text-[11px] text-gray-400">
@@ -226,7 +226,7 @@ export default function NewsFeed() {
                             <span className="text-xs text-bmw-blue font-medium truncate">{article.company_name}</span>
                           )}
                         </div>
-                        <h4 className="text-sm font-semibold text-[text-bmw-text_primary] leading-snug line-clamp-2">
+                        <h4 className="text-sm font-semibold text-[text-bmw-text-primary] leading-snug line-clamp-2">
                           {article.news_headline}
                         </h4>
                         <div className="text-xs text-gray-400 mt-1">
@@ -245,14 +245,14 @@ export default function NewsFeed() {
       {/* Right sidebar — Latest Highlights */}
       <div className="w-64 bg-white border-l border-bmw-border flex flex-col shrink-0">
         <div className="px-4 py-4 border-b border-bmw-border">
-          <h3 className="font-bold text-sm text-[text-bmw-text_primary]">Latest Highlights</h3>
+          <h3 className="font-bold text-sm text-[text-bmw-text-primary]">Latest Highlights</h3>
         </div>
-        <div className="flex-1 overflow-y-auto divide-y divide-bmw-gray_light">
+        <div className="flex-1 overflow-y-auto divide-y divide-bmw-gray-light">
           {sidebarPicks.map((article) => (
             <button
               key={article.id}
               onClick={() => setSelectedArticle(article)}
-              className="w-full text-left px-4 py-3 hover:bg-bmw-gray_light transition-colors"
+              className="w-full text-left px-4 py-3 hover:bg-bmw-gray-light transition-colors"
             >
               <div className="flex items-start gap-2">
                 <span
@@ -260,7 +260,7 @@ export default function NewsFeed() {
                   style={{ backgroundColor: categoryColor(article.category) }}
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-[text-bmw-text_primary] leading-snug line-clamp-2">
+                  <p className="text-xs font-medium text-[text-bmw-text-primary] leading-snug line-clamp-2">
                     {article.news_headline}
                   </p>
                   <p className="text-[11px] text-gray-400 mt-1">
@@ -293,7 +293,7 @@ export default function NewsFeed() {
                   {timeAgo(selectedArticle.date_of_article)}{selectedArticle.news_source ? ` · ${selectedArticle.news_source}` : ''}
                 </span>
               </div>
-              <h2 className="text-xl font-bold text-[text-bmw-text_primary] leading-snug mb-4">
+              <h2 className="text-xl font-bold text-[text-bmw-text-primary] leading-snug mb-4">
                 {selectedArticle.news_headline}
               </h2>
               {selectedArticle.summary && (
@@ -302,7 +302,7 @@ export default function NewsFeed() {
               {selectedArticle.topics?.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-4">
                   {selectedArticle.topics.map((t) => (
-                    <span key={t} className="text-xs bg-bmw-gray_light text-gray-600 px-2 py-1 rounded-full">{t}</span>
+                    <span key={t} className="text-xs bg-bmw-gray-light text-gray-600 px-2 py-1 rounded-full">{t}</span>
                   ))}
                 </div>
               )}

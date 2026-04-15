@@ -87,7 +87,7 @@ function CompanyDigestCard({ digest, onRefreshOne, refreshingId }) {
           {digest.has_breaking && (
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           )}
-          <span className="font-semibold text-sm text-[text-bmw-text_primary]">{digest.company_name}</span>
+          <span className="font-semibold text-sm text-[text-bmw-text-primary]">{digest.company_name}</span>
           {breaking.length > 0 && (
             <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded uppercase tracking-wide">
               {breaking.length} Breaking
@@ -135,7 +135,7 @@ function EmptyWatchedCard({ company, onRemove, onRefreshOne, refreshingId }) {
   return (
     <div className="rounded-xl border border-[#DDE4EA] overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-[#F7F9FB]">
-        <span className="font-semibold text-sm text-[text-bmw-text_primary]">{company.company_name}</span>
+        <span className="font-semibold text-sm text-[text-bmw-text-primary]">{company.company_name}</span>
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <button
             onClick={() => onRefreshOne(company.company_id)}
@@ -251,11 +251,11 @@ export default function WatchlistPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-bmw-gray_light">
+    <div className="flex flex-col h-full overflow-hidden bg-bmw-gray-light">
       {/* Header bar */}
       <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#DDE4EA]">
         <div className="flex items-center gap-3">
-          <h2 className="font-semibold text-[text-bmw-text_primary] text-sm">Watchlist</h2>
+          <h2 className="font-semibold text-[text-bmw-text-primary] text-sm">Watchlist</h2>
           <span className="text-xs text-gray-400">{watchlist.length} companies</span>
           {breakingCount > 0 && (
             <span className="flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">

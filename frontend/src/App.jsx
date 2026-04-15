@@ -87,7 +87,7 @@ export default function App() {
   // If a company detail page is open, show it full screen
   if (detailCompanyId) {
     return (
-      <div className="flex flex-col h-screen overflow-hidden bg-bmw-gray_light">
+      <div className="flex flex-col h-screen overflow-hidden bg-bmw-gray-light">
         <Navbar
           activeTab={activeTab}
           setActiveTab={(tab) => { setDetailCompanyId(null); setActiveTab(tab) }}
@@ -107,7 +107,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-bmw-gray_light">
+    <div className="flex flex-col h-screen overflow-hidden bg-bmw-gray-light">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}

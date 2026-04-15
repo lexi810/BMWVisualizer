@@ -75,7 +75,7 @@ function PopupContent({ c, onSelectCompany }) {
   const isHQ = c.is_hq
   return (
     <div className="min-w-[200px]">
-      <div className="font-bold text-[text-bmw-text_primary] text-sm mb-1">{c.company_name}</div>
+      <div className="font-bold text-[text-bmw-text-primary] text-sm mb-1">{c.company_name}</div>
       {c.facility_name && (
         <div className="text-xs text-bmw-blue font-medium mb-1">{c.facility_name}</div>
       )}
@@ -123,7 +123,7 @@ function Legend() {
     <div className="absolute bottom-8 right-4 z-[1000] bg-white rounded-lg shadow-lg text-xs border border-bmw-border overflow-hidden">
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center justify-between w-full px-3 py-2 font-semibold text-[text-bmw-text_primary] hover:bg-bmw-gray_light"
+        className="flex items-center justify-between w-full px-3 py-2 font-semibold text-[text-bmw-text-primary] hover:bg-bmw-gray-light"
       >
         <span>Company Type</span>
         <span className="ml-4 text-gray-400">{collapsed ? '▲' : '▼'}</span>
@@ -157,7 +157,7 @@ function HeatLegend() {
   ]
   return (
     <div className="absolute bottom-8 left-4 z-[1000] bg-white rounded-lg shadow-lg text-xs border border-bmw-border px-3 py-2">
-      <div className="font-semibold text-[text-bmw-text_primary] mb-1.5">Density</div>
+      <div className="font-semibold text-[text-bmw-text-primary] mb-1.5">Density</div>
       <div className="space-y-1">
         {bands.map(({ label, color }) => (
           <div key={label} className="flex items-center gap-2">
@@ -295,7 +295,7 @@ export default function CompanyMap({ filters, onSelectCompany, highlightName, da
         className={`absolute top-3 right-4 z-[1000] flex items-center gap-1.5 px-3 py-1.5 rounded-lg shadow text-xs font-semibold border transition-all ${
           heatmapMode
             ? 'bg-gradient-to-r from-red-500 to-orange-400 text-white border-red-400'
-            : 'bg-white text-gray-600 border-bmw-border hover:bg-bmw-gray_light'
+            : 'bg-white text-gray-600 border-bmw-border hover:bg-bmw-gray-light'
         }`}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

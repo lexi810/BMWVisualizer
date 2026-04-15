@@ -110,11 +110,11 @@ function ProceedingCard({ proc }) {
   return (
     <div className="bg-white rounded-lg border border-bmw-border p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start gap-3">
-        <span className="text-xs font-semibold bg-bmw-gray_light border border-bmw-border text-[text-bmw-text_primary] px-2 py-1 rounded flex-shrink-0 mt-0.5">
+        <span className="text-xs font-semibold bg-bmw-gray-light border border-bmw-border text-[text-bmw-text-primary] px-2 py-1 rounded flex-shrink-0 mt-0.5">
           {SOURCE_LABELS[proc.source_type] || 'Doc'}
         </span>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-[text-bmw-text_primary] text-sm leading-snug">{proc.title}</h3>
+          <h3 className="font-semibold text-[text-bmw-text-primary] text-sm leading-snug">{proc.title}</h3>
           <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-gray-500">
             {proc.event_name && <span className="font-medium text-gray-700">{proc.event_name}</span>}
             {proc.event_date && <span>{proc.event_date}</span>}
@@ -171,7 +171,7 @@ function ProceedingCard({ proc }) {
           {proc.topics?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {proc.topics.map((t) => (
-                <span key={t} className="bg-bmw-gray_light text-gray-600 text-xs px-2 py-0.5 rounded">
+                <span key={t} className="bg-bmw-gray-light text-gray-600 text-xs px-2 py-0.5 rounded">
                   {t}
                 </span>
               ))}

@@ -53,7 +53,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
     : 'Never'
 
   return (
-    <nav className="bg-bmw-navy select-none border-b border-bmw-navy_light" style={{ height: '44px' }}>
+    <nav className="bg-bmw-navy select-none border-b border-bmw-navy-light" style={{ height: '44px' }}>
       <div className="flex items-center h-full px-4 gap-6">
         {/* Logo + Title */}
         <div className="flex items-center gap-2 min-w-fit">
@@ -76,7 +76,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
               className={`relative h-full px-4 text-sm whitespace-nowrap transition-colors ${
                 activeTab === tab.id
                   ? 'text-white'
-                  : 'text-bmw-gray_dark hover:text-white'
+                  : 'text-bmw-gray-dark hover:text-white'
               }`}
             >
               <span className="flex items-center gap-1.5">
@@ -94,7 +94,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
 
         {/* Sync badge */}
         <div className="flex items-center gap-2 min-w-fit">
-          <span className="text-bmw-gray_dark text-xs whitespace-nowrap">
+          <span className="text-bmw-gray-dark text-xs whitespace-nowrap">
             Synced: <span className="text-white">{lastSynced}</span>
           </span>
           <button
@@ -112,8 +112,8 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
             onClick={() => setSettingsOpen((o) => !o)}
             className={`p-1.5 rounded transition-colors ${
               settingsOpen
-                ? 'bg-bmw-navy_light text-white'
-                : 'text-bmw-gray_dark hover:text-white'
+                ? 'bg-bmw-navy-light text-white'
+                : 'text-bmw-gray-dark hover:text-white'
             }`}
             title="Settings"
           >
@@ -125,7 +125,7 @@ export default function Navbar({ activeTab, setActiveTab, darkMode, setDarkMode,
 
           {/* Dropdown */}
           {settingsOpen && (
-            <div className="absolute right-0 top-full mt-1 w-56 bg-[text-bmw-text_primary] border border-[#0a2a5e] rounded-lg shadow-2xl z-50 py-1 overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 w-56 bg-[text-bmw-text-primary] border border-[#0a2a5e] rounded-lg shadow-2xl z-50 py-1 overflow-hidden">
               <div className="px-3 py-2 text-[10px] font-semibold text-[#8aa4be] uppercase tracking-wider">
                 Appearance
               </div>

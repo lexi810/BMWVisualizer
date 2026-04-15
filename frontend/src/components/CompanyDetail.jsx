@@ -111,7 +111,7 @@ export default function CompanyDetail({ companyId, onClose }) {
       {/* Panel */}
       <div className="w-[520px] bg-white shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-[text-bmw-text_primary] text-white px-5 py-4 flex items-start justify-between">
+        <div className="bg-[text-bmw-text-primary] text-white px-5 py-4 flex items-start justify-between">
           <div className="flex items-center gap-3 min-w-0">
             {company?.company_website && (
               <LogoImg website={company.company_website} name={company.company_name} />
@@ -154,7 +154,7 @@ export default function CompanyDetail({ companyId, onClose }) {
               {company.hq_company && (
                 <div className="col-span-2">
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Parent Company</span>
-                  <div className="text-sm text-[text-bmw-text_primary] mt-0.5">
+                  <div className="text-sm text-[text-bmw-text-primary] mt-0.5">
                     {company.hq_company}
                     {company.hq_company_website && (
                       <a href={company.hq_company_website} target="_blank" rel="noreferrer" className="text-bmw-blue hover:underline ml-2 text-xs">
@@ -178,9 +178,9 @@ export default function CompanyDetail({ companyId, onClose }) {
 
             {/* Contact */}
             {(company.contact_name || company.contact_email || company.contact_phone) && (
-              <div className="bg-bmw-gray_light rounded-lg p-3 space-y-1">
+              <div className="bg-bmw-gray-light rounded-lg p-3 space-y-1">
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Contact</div>
-                {company.contact_name && <div className="text-sm font-medium text-[text-bmw-text_primary]">{company.contact_name}</div>}
+                {company.contact_name && <div className="text-sm font-medium text-[text-bmw-text-primary]">{company.contact_name}</div>}
                 {company.contact_email && (
                   <a href={`mailto:${company.contact_email}`} className="text-sm text-bmw-blue hover:underline block">{company.contact_email}</a>
                 )}
@@ -202,7 +202,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Keywords</div>
                 <div className="flex flex-wrap gap-1">
                   {company.keywords.map((k) => (
-                    <span key={k} className="bg-bmw-gray_light border border-bmw-border text-xs px-2 py-0.5 rounded-full">
+                    <span key={k} className="bg-bmw-gray-light border border-bmw-border text-xs px-2 py-0.5 rounded-full">
                       {k}
                     </span>
                   ))}
@@ -234,7 +234,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                 </div>
                 <div className="space-y-2">
                   {company.announced_partners.map((p, i) => (
-                    <div key={i} className="bg-bmw-gray_light rounded p-3 text-sm">
+                    <div key={i} className="bg-bmw-gray-light rounded p-3 text-sm">
                       <div className="font-medium">{p.partner_name}</div>
                       <div className="text-gray-500 text-xs mt-0.5">
                         {p.type_of_partnership} {p.scale ? `· ${p.scale}` : ''} {p.date ? `· ${p.date}` : ''}
@@ -253,8 +253,8 @@ export default function CompanyDetail({ companyId, onClose }) {
                 </div>
                 <div className="space-y-2">
                   {company.company_locations.map((loc, i) => (
-                    <div key={i} className="bg-bmw-gray_light rounded p-3 text-sm">
-                      {loc.facility_name && <div className="font-medium text-[text-bmw-text_primary]">{loc.facility_name}</div>}
+                    <div key={i} className="bg-bmw-gray-light rounded p-3 text-sm">
+                      {loc.facility_name && <div className="font-medium text-[text-bmw-text-primary]">{loc.facility_name}</div>}
                       <div className="text-gray-500 text-xs mt-0.5">
                         {[loc.address, loc.city, loc.state, loc.country, loc.zip].filter(Boolean).join(', ')}
                       </div>
@@ -321,7 +321,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                 <button
                   onClick={handleReResearch}
                   disabled={researching}
-                  className="text-xs bg-[text-bmw-text_primary] hover:bg-[#0D2A5E] disabled:opacity-60 text-white px-3 py-1 rounded transition-colors"
+                  className="text-xs bg-[text-bmw-text-primary] hover:bg-[#0D2A5E] disabled:opacity-60 text-white px-3 py-1 rounded transition-colors"
                 >
                   {researching ? 'Researching…' : 'Full re-research'}
                 </button>
@@ -338,7 +338,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                       <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap leading-relaxed ${
                         m.role === 'user'
                           ? 'bg-bmw-blue text-white'
-                          : 'bg-bmw-gray_light text-gray-800 border border-bmw-border'
+                          : 'bg-bmw-gray-light text-gray-800 border border-bmw-border'
                       }`}>
                         {m.text}
                       </div>
@@ -346,7 +346,7 @@ export default function CompanyDetail({ companyId, onClose }) {
                   ))}
                   {chatLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-bmw-gray_light border border-bmw-border rounded-lg px-3 py-2 text-sm text-gray-400 animate-pulse">
+                      <div className="bg-bmw-gray-light border border-bmw-border rounded-lg px-3 py-2 text-sm text-gray-400 animate-pulse">
                         Thinking…
                       </div>
                     </div>
@@ -396,7 +396,7 @@ function Info({ label, value }) {
   return (
     <div>
       <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">{label}</div>
-      <div className="text-sm text-[text-bmw-text_primary] mt-0.5">{value}</div>
+      <div className="text-sm text-[text-bmw-text-primary] mt-0.5">{value}</div>
     </div>
   )
 }

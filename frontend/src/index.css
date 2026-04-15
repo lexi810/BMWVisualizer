@@ -6,7 +6,7 @@
 
 @layer base {
   body {
-    @apply font-sans text-bmw-text_primary;
+    @apply font-sans text-bmw-text-primary;
     margin: 0;
     background-color: #F5F7FA;
     letter-spacing: -0.3px;

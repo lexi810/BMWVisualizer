@@ -240,7 +240,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
               activeSection === s.id
                 ? 'text-bmw-blue border-bmw-blue'
-                : 'text-bmw-text_secondary border-transparent hover:text-bmw-text_primary'
+                : 'text-bmw-text-secondary border-transparent hover:text-bmw-text-primary'
             }`}
           >
             {s.label}
@@ -333,7 +333,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <Section title="Keywords">
                   <div className="flex flex-wrap gap-1.5">
                     {company.keywords.map((k) => (
-                      <span key={k} className="bg-bmw-gray_light border border-bmw-border text-xs px-2.5 py-1 rounded-full">{k}</span>
+                      <span key={k} className="bg-bmw-gray-light border border-bmw-border text-xs px-2.5 py-1 rounded-full">{k}</span>
                     ))}
                   </div>
                 </Section>
@@ -366,9 +366,9 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <Section title="Manufacturing Capacity (GWh)">
                   <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                     {Object.entries(company.gwh_capacity).sort(([a], [b]) => a.localeCompare(b)).map(([year, val]) => (
-                      <div key={year} className="bg-bmw-gray_light rounded p-2 text-center">
+                      <div key={year} className="bg-bmw-gray-light rounded p-2 text-center">
                         <div className="text-xs text-gray-500">{year}</div>
-                        <div className="text-sm font-semibold text-[text-bmw-text_primary]">{val}</div>
+                        <div className="text-sm font-semibold text-[text-bmw-text-primary]">{val}</div>
                       </div>
                     ))}
                   </div>
@@ -378,8 +378,8 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
               {/* Contact */}
               {(company.contact_name || company.contact_email || company.contact_phone) && (
                 <Section title="Contact">
-                  <div className="bg-bmw-gray_light rounded-lg p-4 space-y-1">
-                    {company.contact_name && <div className="text-sm font-medium text-[text-bmw-text_primary]">{company.contact_name}</div>}
+                  <div className="bg-bmw-gray-light rounded-lg p-4 space-y-1">
+                    {company.contact_name && <div className="text-sm font-medium text-[text-bmw-text-primary]">{company.contact_name}</div>}
                     {company.contact_email && <a href={`mailto:${company.contact_email}`} className="text-sm text-bmw-blue hover:underline block">{company.contact_email}</a>}
                     {company.contact_email2 && <a href={`mailto:${company.contact_email2}`} className="text-sm text-bmw-blue hover:underline block">{company.contact_email2}</a>}
                     {company.contact_phone && <div className="text-sm text-gray-500">{company.contact_phone}</div>}
@@ -399,9 +399,9 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <Section title="Additional Metrics">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {company.metrics.map((m, i) => (
-                      <div key={i} className="bg-bmw-gray_light rounded p-3">
+                      <div key={i} className="bg-bmw-gray-light rounded p-3">
                         <div className="text-xs text-gray-500 uppercase">{m.metric_name.replace(/_/g, ' ')}</div>
-                        <div className="text-sm font-semibold text-[text-bmw-text_primary] mt-0.5">
+                        <div className="text-sm font-semibold text-[text-bmw-text-primary] mt-0.5">
                           {m.metric_value?.toLocaleString()} {m.metric_unit || ''}
                         </div>
                         {m.date_recorded && <div className="text-xs text-gray-400 mt-0.5">{m.date_recorded}</div>}
@@ -423,13 +423,13 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                   <div key={f.id || i} className="bg-white border border-bmw-border rounded-lg p-4 space-y-2">
                     <div className="flex items-start justify-between">
                       <div>
-                        {f.facility_name && <div className="font-medium text-[text-bmw-text_primary]">{f.facility_name}</div>}
+                        {f.facility_name && <div className="font-medium text-[text-bmw-text-primary]">{f.facility_name}</div>}
                         <div className="text-sm text-gray-500 mt-0.5">
                           {[f.address, f.city, f.state, f.country, f.zip_code].filter(Boolean).join(', ')}
                         </div>
                       </div>
                       {f.status && (
-                        <span className="text-xs bg-bmw-gray_light px-2 py-0.5 rounded">{f.status}</span>
+                        <span className="text-xs bg-bmw-gray-light px-2 py-0.5 rounded">{f.status}</span>
                       )}
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-600">
@@ -472,7 +472,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                           style={{ backgroundColor: PARTNERSHIP_TYPE_COLORS[p.partnership_type] || '#94A3B8' }}
                         />
                         <div>
-                          <div className="font-medium text-[text-bmw-text_primary] text-sm">{p.partnership_name || 'Partnership'}</div>
+                          <div className="font-medium text-[text-bmw-text-primary] text-sm">{p.partnership_name || 'Partnership'}</div>
                           <div className="text-xs text-gray-500 mt-0.5">
                             {PARTNERSHIP_TYPE_LABELS[p.partnership_type] || p.partnership_type}
                             {p.date_announced && ` -- ${p.date_announced}`}
@@ -481,7 +481,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                       </div>
                       <div className="flex items-center gap-2">
                         {p.deal_value && (
-                          <span className="text-xs font-medium text-[text-bmw-text_primary]">{formatMoney(p.deal_value)}</span>
+                          <span className="text-xs font-medium text-[text-bmw-text-primary]">{formatMoney(p.deal_value)}</span>
                         )}
                         {p.stage && (
                           <span className={`text-xs px-2 py-0.5 rounded ${STAGE_COLORS[p.stage] || 'bg-gray-100 text-gray-700'}`}>
@@ -541,7 +541,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
               ) : (
                 company.news.map((n) => (
                   <div key={n.id} className="bg-white border border-bmw-border rounded-lg p-4">
-                    <div className="font-medium text-[text-bmw-text_primary] text-sm">{n.news_headline}</div>
+                    <div className="font-medium text-[text-bmw-text-primary] text-sm">{n.news_headline}</div>
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${CATEGORY_COLORS[n.category] || CATEGORY_COLORS.other}`}>
                         {n.category}
@@ -558,7 +558,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                     {n.topics?.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {n.topics.map((t, i) => (
-                          <span key={i} className="text-[10px] bg-bmw-gray_light px-1.5 py-0.5 rounded">{t}</span>
+                          <span key={i} className="text-[10px] bg-bmw-gray-light px-1.5 py-0.5 rounded">{t}</span>
                         ))}
                       </div>
                     )}
@@ -576,7 +576,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <button
                   onClick={handleReResearch}
                   disabled={researching}
-                  className="text-xs bg-[text-bmw-text_primary] hover:bg-[#0D2A5E] disabled:opacity-60 text-white px-4 py-1.5 rounded transition-colors"
+                  className="text-xs bg-[text-bmw-text-primary] hover:bg-[#0D2A5E] disabled:opacity-60 text-white px-4 py-1.5 rounded transition-colors"
                 >
                   {researching ? 'Researching...' : 'Full re-research'}
                 </button>
@@ -590,7 +590,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                       <div className={`max-w-[85%] rounded-lg px-4 py-2.5 text-sm whitespace-pre-wrap leading-relaxed ${
                         m.role === 'user'
                           ? 'bg-bmw-blue text-white'
-                          : 'bg-bmw-gray_light text-gray-800 border border-bmw-border'
+                          : 'bg-bmw-gray-light text-gray-800 border border-bmw-border'
                       }`}>
                         {m.text}
                       </div>
@@ -598,7 +598,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                   ))}
                   {chatLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-bmw-gray_light border border-bmw-border rounded-lg px-4 py-2.5 text-sm text-gray-400 animate-pulse">
+                      <div className="bg-bmw-gray-light border border-bmw-border rounded-lg px-4 py-2.5 text-sm text-gray-400 animate-pulse">
                         Thinking...
                       </div>
                     </div>
@@ -647,7 +647,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                         {sc.company_hq_country && <span> -- {sc.company_hq_country}</span>}
                       </div>
                       {sc.industry_segment && (
-                        <span className="text-[10px] bg-bmw-gray_light px-1.5 py-0.5 rounded mt-1.5 inline-block">{sc.industry_segment}</span>
+                        <span className="text-[10px] bg-bmw-gray-light px-1.5 py-0.5 rounded mt-1.5 inline-block">{sc.industry_segment}</span>
                       )}
                     </div>
                   ))}
@@ -668,7 +668,7 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                 <div className="space-y-2">
                   {company.citations.map((c, i) => (
                     <div key={i} className="bg-white border border-bmw-border rounded-lg px-4 py-3 flex items-center justify-between">
-                      <span className="text-sm text-[text-bmw-text_primary]">{c.source_name}</span>
+                      <span className="text-sm text-[text-bmw-text-primary]">{c.source_name}</span>
                       {c.source_url ? (
                         <a href={c.source_url} target="_blank" rel="noreferrer" className="text-bmw-blue text-sm hover:underline">
                           {c.source_url}
@@ -704,9 +704,9 @@ function StatPill({ label, value }) {
 function InfoCard({ label, value }) {
   if (!value) return null
   return (
-    <div className="bg-bmw-gray_light rounded-lg p-3">
+    <div className="bg-bmw-gray-light rounded-lg p-3">
       <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">{label}</div>
-      <div className="text-sm text-[text-bmw-text_primary] mt-0.5 font-medium">{value}</div>
+      <div className="text-sm text-[text-bmw-text-primary] mt-0.5 font-medium">{value}</div>
     </div>
   )
 }

@@ -29,7 +29,7 @@ function DropdownFilter({ label, options, selected, onChange }) {
     <div className="border-b border-bmw-border">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[text-bmw-text_primary] hover:bg-bmw-gray_light transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[text-bmw-text-primary] hover:bg-bmw-gray-light transition-colors"
       >
         <span>{label}{activeCount > 0 ? <span className="ml-1 text-bmw-blue">({activeCount})</span> : ''}</span>
         <svg
@@ -45,7 +45,7 @@ function DropdownFilter({ label, options, selected, onChange }) {
           {options.map((opt) => (
             <label
               key={opt}
-              className="flex items-center gap-2 px-3 py-0.5 cursor-pointer hover:bg-bmw-gray_light"
+              className="flex items-center gap-2 px-3 py-0.5 cursor-pointer hover:bg-bmw-gray-light"
             >
               <input
                 type="checkbox"
@@ -63,7 +63,7 @@ function DropdownFilter({ label, options, selected, onChange }) {
           ))}
           <button
             onClick={() => onChange([])}
-            className={`w-full text-left px-3 py-1.5 text-xs border-t border-bmw-border ${activeCount > 0 ? 'text-bmw-blue hover:bg-bmw-gray_light cursor-pointer' : 'invisible pointer-events-none'}`}
+            className={`w-full text-left px-3 py-1.5 text-xs border-t border-bmw-border ${activeCount > 0 ? 'text-bmw-blue hover:bg-bmw-gray-light cursor-pointer' : 'invisible pointer-events-none'}`}
           >
             Clear
           </button>
@@ -120,7 +120,7 @@ export default function Sidebar({ filters, setFilters, collapsed, setCollapsed, 
     >
       <div className="flex items-center justify-between px-2 py-2 border-b border-bmw-border flex-shrink-0">
         {!collapsed && (
-          <span className="text-xs font-semibold text-[text-bmw-text_primary] uppercase tracking-wider">Filters</span>
+          <span className="text-xs font-semibold text-[text-bmw-text-primary] uppercase tracking-wider">Filters</span>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
@@ -158,7 +158,7 @@ export default function Sidebar({ filters, setFilters, collapsed, setCollapsed, 
                     onMouseDown={() => selectSuggestion(name)}
                     onMouseEnter={() => onHighlightCompany?.(name)}
                     onMouseLeave={() => onHighlightCompany?.(null)}
-                    className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-[#E8F1FF] hover:text-[text-bmw-text_primary] border-b border-bmw-border last:border-b-0 truncate"
+                    className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-[#E8F1FF] hover:text-[text-bmw-text-primary] border-b border-bmw-border last:border-b-0 truncate"
                   >
                     {name}
                   </button>

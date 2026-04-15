@@ -459,7 +459,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
   /* ── Loading / empty ── */
   if (loading || !FG) {
     return (
-      <div className={`flex items-center justify-center h-full ${dark ? 'bg-[#0D1B2E] text-gray-400' : 'bg-bmw-gray_light text-gray-500'}`}>
+      <div className={`flex items-center justify-center h-full ${dark ? 'bg-[#0D1B2E] text-gray-400' : 'bg-bmw-gray-light text-gray-500'}`}>
         {loading ? 'Loading network data\u2026' : 'Initializing graph\u2026'}
       </div>
     )
@@ -467,7 +467,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
 
   if (graphData.links.length === 0) {
     return (
-      <div className={`flex flex-col items-center justify-center h-full gap-3 ${dark ? 'bg-[#0D1B2E]' : 'bg-bmw-gray_light'}`}>
+      <div className={`flex flex-col items-center justify-center h-full gap-3 ${dark ? 'bg-[#0D1B2E]' : 'bg-bmw-gray-light'}`}>
         <div className={`text-lg font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>No partnership data yet</div>
         <div className={`text-sm text-center max-w-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
           Go to the Research tab and run "Research a Company" or upload PitchBook/Crunchbase data to populate partnerships.
@@ -476,7 +476,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
     )
   }
 
-  const bg = dark ? '#0D1B2E' : 'bmw-gray_light'
+  const bg = dark ? '#0D1B2E' : 'bmw-gray-light'
   const panelBg = dark ? 'bg-[#0F1D2F]' : 'bg-white'
   const borderClr = dark ? 'border-gray-700' : 'border-bmw-border'
   const textMuted = dark ? 'text-gray-400' : 'text-gray-500'
@@ -484,7 +484,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
   const inputBg = dark ? 'bg-[#1E293B] border-gray-600 text-gray-200 placeholder-gray-500' : 'border-bmw-border text-gray-800 placeholder-gray-400'
 
   return (
-    <div className={`flex flex-1 min-h-0 ${dark ? 'bg-[#0D1B2E]' : 'bg-bmw-gray_light'}`}>
+    <div className={`flex flex-1 min-h-0 ${dark ? 'bg-[#0D1B2E]' : 'bg-bmw-gray-light'}`}>
       {/* ── Filter sidebar ── */}
       {sidebarOpen && (
         <div className={`w-64 ${panelBg} border-r ${borderClr} flex flex-col overflow-y-auto shrink-0`}>
@@ -605,7 +605,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className={`text-xs px-3 py-1.5 rounded border transition-colors ${
               sidebarOpen
-                ? (dark ? 'bg-blue-600 text-white border-blue-600' : 'bg-[text-bmw-text_primary] text-white border-[text-bmw-text_primary]')
+                ? (dark ? 'bg-blue-600 text-white border-blue-600' : 'bg-[text-bmw-text-primary] text-white border-[text-bmw-text-primary]')
                 : `${dark ? 'border-gray-600 text-gray-400 hover:border-blue-500' : 'border-bmw-border text-gray-600 hover:border-bmw-blue'}`
             }`}
           >
@@ -670,7 +670,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
         </div>
 
         {/* Legend */}
-        <div className={`${dark ? 'bg-[#0D1B2E]' : 'bg-bmw-gray_light'} border-b ${borderClr} px-4 py-1.5 flex items-center gap-5 flex-wrap`}>
+        <div className={`${dark ? 'bg-[#0D1B2E]' : 'bg-bmw-gray-light'} border-b ${borderClr} px-4 py-1.5 flex items-center gap-5 flex-wrap`}>
           <div className="flex items-center gap-3 flex-wrap">
             <span className={`text-xs font-medium ${textMuted} uppercase tracking-wider`}>Arrows:</span>
             {Object.entries(LINK_TYPE_COLORS).map(([key, { base, label }]) => (
@@ -726,7 +726,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
             className={`absolute bottom-4 left-4 z-10 rounded-lg shadow px-3 py-2 text-xs font-medium transition-colors flex items-center gap-1.5
               ${dark
                 ? 'bg-[#1E293B] border border-gray-600 text-gray-300 hover:bg-[#2D3B4F]'
-                : 'bg-white border border-bmw-border text-gray-600 hover:bg-bmw-gray_light'
+                : 'bg-white border border-bmw-border text-gray-600 hover:bg-bmw-gray-light'
               }`}
           >
             Fit All
@@ -737,7 +737,7 @@ export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
             <div className={`absolute top-4 left-4 rounded-xl shadow-lg px-4 py-3 text-sm border pointer-events-none max-w-[260px]
               ${dark ? 'bg-[#1E293B] border-gray-600' : 'bg-white border-bmw-border'}`}
             >
-              <div className={`font-semibold leading-tight ${dark ? 'text-gray-100' : 'text-[text-bmw-text_primary]'}`}>
+              <div className={`font-semibold leading-tight ${dark ? 'text-gray-100' : 'text-[text-bmw-text-primary]'}`}>
                 {hoveredNode.name}
               </div>
               {hoveredNode.in_db === false && (

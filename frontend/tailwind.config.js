@@ -13,17 +13,17 @@ export default {
           // Primary colors
           blue: '#1C69D4',
           navy: '#001a33',
-          navy_light: '#031E49',
+          'navy-light': '#031E49',
           // Accent & status
           red: '#E60105',
           green: '#00AA44',
-          gray_light: '#F5F7FA',
-          gray_medium: '#E8ECEF',
-          gray_dark: '#B5BFCA',
+          'gray-light': '#F5F7FA',
+          'gray-medium': '#E8ECEF',
+          'gray-dark': '#B5BFCA',
           // UI elements
           white: '#FFFFFF',
-          text_primary: '#001a33',
-          text_secondary: '#666666',
+          'text-primary': '#001a33',
+          'text-secondary': '#666666',
           border: '#E0E4E8',
         },
       },

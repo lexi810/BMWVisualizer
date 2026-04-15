@@ -189,7 +189,7 @@ export default function CompanyTable({ filters, onOpenCompany }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Category tabs */}
-      <div className="flex flex-wrap gap-1.5 px-4 pt-3 pb-2 bg-bmw-gray_light border-b border-bmw-border">
+      <div className="flex flex-wrap gap-1.5 px-4 pt-3 pb-2 bg-bmw-gray-light border-b border-bmw-border">
         {CATEGORIES.map((cat) => {
           const isActive = activeCategory === cat.key
           const color = CATEGORY_COLORS[cat.key] || 'bmw-blue'

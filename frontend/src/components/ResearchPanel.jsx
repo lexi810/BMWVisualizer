@@ -103,17 +103,17 @@ export default function ResearchPanel() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 bg-bmw-gray_light">
+    <div className="flex-1 overflow-y-auto p-8 bg-bmw-gray-light">
       <div className="max-w-3xl mx-auto space-y-6">
 
         <div>
-          <h2 className="text-lg font-semibold text-[text-bmw-text_primary] mb-1">Data Import</h2>
+          <h2 className="text-lg font-semibold text-[text-bmw-text-primary] mb-1">Data Import</h2>
           <p className="text-sm text-gray-500">Upload company data from spreadsheets, documents, or platform exports.</p>
         </div>
 
         {/* CSV / XLSX */}
         <div className="bg-white rounded-xl border border-[#DDE4EA] p-6">
-          <h3 className="font-semibold text-[text-bmw-text_primary] mb-1">Companies Spreadsheet</h3>
+          <h3 className="font-semibold text-[text-bmw-text-primary] mb-1">Companies Spreadsheet</h3>
           <p className="text-xs text-gray-500 mb-4">Import a CSV or XLSX with company records. New companies are added; existing ones are updated.</p>
           <DropZone label="CSV or XLSX file" accept=".csv,.xlsx" onUpload={handleCsvUpload} uploading={csvUploading} />
           <ResultBanner result={csvResult} onDismiss={() => setCsvResult(null)} />
@@ -121,7 +121,7 @@ export default function ResearchPanel() {
 
         {/* PitchBook / Crunchbase */}
         <div className="bg-white rounded-xl border border-[#DDE4EA] p-6">
-          <h3 className="font-semibold text-[text-bmw-text_primary] mb-1">PitchBook / Crunchbase Export</h3>
+          <h3 className="font-semibold text-[text-bmw-text-primary] mb-1">PitchBook / Crunchbase Export</h3>
           <p className="text-xs text-gray-500 mb-2">
             Drop a company list, deals sheet, or funding rounds export. Format is auto-detected and partnerships are linked into the network graph.
           </p>
@@ -137,7 +137,7 @@ export default function ResearchPanel() {
 
         {/* PDF / Document */}
         <div className="bg-white rounded-xl border border-[#DDE4EA] p-6">
-          <h3 className="font-semibold text-[text-bmw-text_primary] mb-1">Document Import</h3>
+          <h3 className="font-semibold text-[text-bmw-text-primary] mb-1">Document Import</h3>
           <p className="text-xs text-gray-500 mb-4">
             Upload a PDF, text file, or markdown document — conference papers, press releases, transcripts. Claude extracts companies, news, and proceedings automatically.
           </p>
