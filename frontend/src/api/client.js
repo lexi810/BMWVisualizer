@@ -34,9 +34,6 @@ export const getCompanyMetrics = (id) => api.get(`/companies/${id}/metrics`)
 export const getNews = (params) => api.get('/news', { params })
 export const searchNews = (company_name) => api.post('/news/search', { company_name })
 
-// Proceedings
-export const getProceedings = (params) => api.get('/proceedings', { params })
-
 // Uploads
 export const uploadCSV = (file) => {
   const form = new FormData()

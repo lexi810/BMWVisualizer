@@ -92,30 +92,6 @@ class NewsHeadline(Base):
 Index("ix_news_company_id", NewsHeadline.company_id)
 
 
-class ConferenceProceeding(Base):
-    __tablename__ = "conference_proceedings"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    company_id = Column(Integer, ForeignKey("companies.id"))
-    company_name = Column(Text)
-    title = Column(Text, nullable=False)
-    event_name = Column(Text)
-    event_date = Column(Text)
-    location = Column(Text)
-    authors = Column(Text)                    # JSON array
-    technologies = Column(Text)               # JSON array
-    partners_mentioned = Column(Text)         # JSON array
-    results_summary = Column(Text)
-    source_type = Column(Text)
-    source_url = Column(Text)
-    file_path = Column(Text)
-    topics = Column(Text)                     # JSON array
-    created_at = Column(Text)
-
-
-Index("ix_proceedings_company_id", ConferenceProceeding.company_id)
-
-
 class SyncLog(Base):
     __tablename__ = "sync_log"
 

@@ -181,7 +181,6 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
     { id: 'facilities', label: `Facilities (${(company.facilities || []).length})` },
     { id: 'partnerships', label: `Partnerships (${allPartnerships.length})` },
     { id: 'news', label: `News (${(company.news || []).length})` },
-    { id: 'proceedings', label: `Proceedings (${(company.proceedings || []).length})` },
     { id: 'ai', label: 'AI Chat' },
     { id: 'similar', label: 'Similar Companies' },
     { id: 'citations', label: 'Citations' },
@@ -562,42 +561,6 @@ export default function CompanyDetailPage({ companyId, onClose, onOpenCompany, d
                           <span key={i} className="text-[10px] bg-[#F0F4F8] px-1.5 py-0.5 rounded">{t}</span>
                         ))}
                       </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* PROCEEDINGS */}
-          {activeSection === 'proceedings' && (
-            <div className="space-y-3">
-              {(company.proceedings || []).length === 0 ? (
-                <EmptyState text="No conference proceedings available" />
-              ) : (
-                company.proceedings.map((p) => (
-                  <div key={p.id} className="bg-white border border-[#B8CAD1] rounded-lg p-4">
-                    <div className="font-medium text-[#031E49] text-sm">{p.title}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {p.event_name && <span>{p.event_name}</span>}
-                      {p.event_date && <span> -- {p.event_date}</span>}
-                      {p.location && <span> -- {p.location}</span>}
-                    </div>
-                    {p.authors?.length > 0 && (
-                      <div className="text-xs text-gray-400 mt-1">Authors: {p.authors.join(', ')}</div>
-                    )}
-                    {p.results_summary && <p className="text-sm text-gray-600 mt-2">{p.results_summary}</p>}
-                    {p.technologies?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {p.technologies.map((t, i) => (
-                          <span key={i} className="text-[10px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded">{t}</span>
-                        ))}
-                      </div>
-                    )}
-                    {p.source_url && (
-                      <a href={p.source_url} target="_blank" rel="noreferrer" className="text-[#4599FE] text-xs hover:underline mt-1 inline-block">
-                        View source
-                      </a>
                     )}
                   </div>
                 ))
