@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from backend.config import UPLOAD_DIR
 from backend.database import get_db
-from backend.models import Company, ConferenceProceeding, NewsHeadline, Partnership, PartnershipMember, ResearchJob
+from backend.models import Company, NewsHeadline, Partnership, PartnershipMember, ResearchJob
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/upload", tags=["upload"])
@@ -127,7 +127,7 @@ async def upload_document(file: UploadFile = File(...), db: Session = Depends(ge
             )
 
             ts = datetime.now(timezone.utc).isoformat()
-            companies_added = news_added = procs_added = 0
+            companies_added = news_added = 0
 
             for comp_data in result.get("companies", []):
                 name = comp_data.get("company_name", "").strip()
@@ -170,30 +170,6 @@ async def upload_document(file: UploadFile = File(...), db: Session = Depends(ge
                 inner_db.add(n)
                 news_added += 1
 
-            for proc in result.get("proceedings", []):
-                name = proc.get("company_name", "")
-                company = inner_db.query(Company).filter(
-                    Company.company_name.ilike(name)
-                ).first() if name else None
-                p = ConferenceProceeding(
-                    company_id=company.id if company else None,
-                    company_name=name,
-                    title=proc.get("title", filename),
-                    event_name=proc.get("event_name"),
-                    event_date=proc.get("event_date"),
-                    location=proc.get("location"),
-                    authors=json.dumps(proc.get("authors", [])),
-                    technologies=json.dumps(proc.get("technologies", [])),
-                    partners_mentioned=json.dumps(proc.get("partners_mentioned", [])),
-                    results_summary=proc.get("results_summary"),
-                    source_type=proc.get("source_type", "conference_paper"),
-                    file_path=path,
-                    topics=json.dumps(proc.get("topics", [])),
-                    created_at=ts,
-                )
-                inner_db.add(p)
-                procs_added += 1
-
             inner_db.commit()
 
             j = inner_db.query(ResearchJob).filter(ResearchJob.id == job_id).first()
@@ -202,7 +178,6 @@ async def upload_document(file: UploadFile = File(...), db: Session = Depends(ge
                 j.result = json.dumps({
                     "companies_added": companies_added,
                     "news_added": news_added,
-                    "proceedings_added": procs_added,
                 })
                 j.updated_at = datetime.now(timezone.utc).isoformat()
                 inner_db.commit()

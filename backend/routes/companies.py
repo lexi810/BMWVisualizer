@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models import Company, NewsHeadline, ConferenceProceeding, Partnership, PartnershipMember, ResearchJob
+from backend.models import Company, NewsHeadline, Partnership, PartnershipMember, ResearchJob
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/companies", tags=["companies"])
@@ -256,19 +256,6 @@ def get_company(company_id: int, db: Session = Depends(get_db)):
         .filter(NewsHeadline.company_id == company_id)
         .order_by(NewsHeadline.date_of_article.desc())
         .limit(5)
-        .all()
-    ]
-    data["proceedings"] = [
-        {
-            "id": p.id,
-            "title": p.title,
-            "event_name": p.event_name,
-            "event_date": p.event_date,
-            "technologies": json.loads(p.technologies or "[]"),
-        }
-        for p in db.query(ConferenceProceeding)
-        .filter(ConferenceProceeding.company_id == company_id)
-        .limit(10)
         .all()
     ]
     return data

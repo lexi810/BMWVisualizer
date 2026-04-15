@@ -18,7 +18,6 @@ from backend.models import (
     Partnership,
     PartnershipMember,
     NewsHeadline,
-    ConferenceProceeding,
     ResearchJob,
 )
 
@@ -625,8 +624,8 @@ def company_detail(company_id: int, db: Session = Depends(get_db)):
             "source_type": p.source_type,
             "source_url": p.source_url,
         }
-        for p in db.query(ConferenceProceeding)
-        .filter(ConferenceProceeding.company_id == company_id)
+        for p in db.query(NewsHeadline)
+        .filter(NewsHeadline.company_id == company_id)
         .all()
     ]
 
