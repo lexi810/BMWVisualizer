@@ -107,7 +107,7 @@ export default function App() {
   }
 
   return (
-    <div className=\"flex flex-col h-screen overflow-hidden bg-bmw-gray_light\">
+    <div className="flex flex-col h-screen overflow-hidden bg-bmw-gray_light">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -119,7 +119,7 @@ export default function App() {
 
       {/* Seeding banner */}
       {seedBanner && (
-        <div className=\"bg-bmw-blue text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-3\">
+        <div className="bg-bmw-blue text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-3">
           <span className="animate-spin"></span>
           Importing battery company database — this may take a few minutes on first run…
         </div>
