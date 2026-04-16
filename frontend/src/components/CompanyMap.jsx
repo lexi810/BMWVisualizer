@@ -75,9 +75,9 @@ function PopupContent({ c, onSelectCompany }) {
   const isHQ = c.is_hq
   return (
     <div className="min-w-[200px]">
-      <div className="font-bold text-[text-bmw-text-primary] text-sm mb-1">{c.company_name}</div>
-      {c.facility_name && (
-        <div className="text-xs text-bmw-blue font-medium mb-1">{c.facility_name}</div>
+      <div className="font-bold text-bmw-text-primary text-sm mb-2">{c.company_name}</div>
+      {c.facility_name && c.facility_name !== c.company_name && (
+        <div className="text-xs text-bmw-text-secondary font-medium mb-1">{c.facility_name}</div>
       )}
       <div className="text-xs text-gray-600 space-y-0.5">
         <div>
