@@ -60,10 +60,10 @@ export default function Navbar({ activeTab, setActiveTab, watchlistBreaking = 0,
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`relative h-full px-5 text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`relative h-full px-5 text-sm font-medium whitespace-nowrap transition-all rounded-t ${
                 activeTab === tab.id
-                  ? 'text-bmw-blue'
-                  : 'text-bmw-text-secondary hover:text-bmw-text-primary'
+                  ? 'text-bmw-blue bg-bmw-gray-light'
+                  : 'text-bmw-text-secondary hover:bg-bmw-gray-light hover:text-bmw-text-primary'
               }`}
             >
               <span className="flex items-center gap-1.5">
