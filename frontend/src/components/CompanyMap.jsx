@@ -120,23 +120,25 @@ function PopupContent({ c, onSelectCompany }) {
 function Legend() {
   const [collapsed, setCollapsed] = React.useState(false)
   return (
-    <div className="absolute bottom-8 left-4 z-[1000] bg-white rounded-lg shadow-lg text-xs border border-bmw-border overflow-hidden">
+    <div className={`absolute bottom-8 left-4 z-[1000] rounded-lg shadow-lg text-xs border border-bmw-border overflow-hidden transition-colors ${
+      collapsed ? 'bg-white' : 'bg-bmw-gray-light'
+    }`}>
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center justify-between w-full px-3 py-2 font-semibold text-[text-bmw-text-primary] hover:bg-bmw-gray-light"
+        className="flex items-center justify-between w-full px-3 py-2 font-semibold text-[text-bmw-text-primary] hover:bg-white/80"
       >
         <span>Company Type</span>
         <span className="ml-4 text-gray-400">{collapsed ? '▲' : '▼'}</span>
       </button>
       {!collapsed && (
-        <div className="px-3 pb-3 max-h-56 overflow-y-auto space-y-1">
+        <div className="px-3 pb-3 space-y-1 bg-white">
           {Object.entries(TYPE_COLORS).map(([type, color]) => (
             <div key={type} className="flex items-center gap-2">
               <span
                 className="inline-block w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-gray-700 capitalize">{type}</span>
+              <span className="text-gray-700 capitalize text-[11px]">{type}</span>
             </div>
           ))}
         </div>
