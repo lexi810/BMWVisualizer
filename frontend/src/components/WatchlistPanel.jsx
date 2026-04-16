@@ -28,16 +28,6 @@ function getFaviconUrl(url) {
     const domain = new URL(url).hostname.replace(/^www\./, '')
     return `https://www.google.com/s2/favicons?sz=64&domain=${domain}`
   } catch { return null }
-=======
-  funding: 'bg-blue-50 text-bmw-blue',
-  partnership: 'bg-blue-50 text-bmw-blue',
-  regulatory: 'bg-red-50 text-red-700',
-  technology: 'bg-blue-50 text-bmw-blue',
-  expansion: 'bg-gray-100 text-bmw-text-secondary',
-  leadership: 'bg-gray-100 text-bmw-text-secondary',
-  financial: 'bg-gray-100 text-bmw-text-secondary',
-  other: 'bg-gray-100 text-bmw-gray-dark',
->>>>>>> f971c8e (Simplify category colors to match BMW's clean minimal aesthetic)
 }
 
 function ImportanceDots({ score }) {

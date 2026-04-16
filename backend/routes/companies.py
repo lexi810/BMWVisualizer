@@ -7,7 +7,9 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy import cast, case, func
+from sqlalchemy.dialects.postgresql import JSON as PGJSON
+from sqlalchemy.orm import Session, load_only
 
 from backend.database import get_db
 from backend.models import Company, NewsHeadline, Partnership, PartnershipMember, ResearchJob
@@ -75,6 +77,166 @@ def _company_dict(c: Company) -> dict:
     }
 
 
+# Columns needed for the company table, export CSV, and sidebar name hints — not full profile blobs.
+_COMPANY_LIST_LOAD_ONLY = (
+    Company.id,
+    Company.company_name,
+    Company.company_hq_city,
+    Company.company_hq_state,
+    Company.company_hq_country,
+    Company.company_hq_lat,
+    Company.company_hq_lng,
+    Company.company_type,
+    Company.company_status,
+    Company.company_focus,
+    Company.supply_chain_segment,
+    Company.keywords,
+    Company.number_of_employees,
+    Company.market_cap_usd,
+    Company.revenue_usd,
+    Company.total_funding_usd,
+    Company.last_fundraise_date,
+    Company.company_website,
+    Company.hq_company,
+    Company.hq_company_website,
+    Company.chemistries,
+    Company.feedstock,
+    Company.summary,
+    Company.naatbatt_member,
+    Company.naatbatt_id,
+    Company.qc,
+    Company.qc_date,
+    Company.summary_word_count,
+    Company.employee_size,
+    Company.funding_status,
+    Company.crunchbase_url,
+    Company.linkedin_url,
+    Company.pitchbook_url,
+    Company.volta_member,
+    Company.volta_verified,
+    Company.products,
+    Company.gwh_capacity,
+    Company.plant_start_date,
+    Company.last_updated,
+    Company.data_source,
+)
+
+# Map markers: only fields used when flattening facilities + HQ.
+_COMPANY_MAP_LOAD_ONLY = (
+    Company.id,
+    Company.company_name,
+    Company.company_type,
+    Company.company_status,
+    Company.supply_chain_segment,
+    Company.company_website,
+    Company.naatbatt_member,
+    Company.company_hq_lat,
+    Company.company_hq_lng,
+    Company.company_hq_city,
+    Company.company_hq_state,
+    Company.company_hq_country,
+    Company.chemistries,
+    Company.company_locations,
+)
+
+# Partnership graph: company shell + announced_partners JSON only.
+_COMPANY_NETWORK_LOAD_ONLY = (
+    Company.id,
+    Company.company_name,
+    Company.company_type,
+    Company.number_of_employees,
+    Company.market_cap_usd,
+    Company.revenue_usd,
+    Company.total_funding_usd,
+    Company.supply_chain_segment,
+    Company.announced_partners,
+)
+
+
+def _announced_partners_count_expr(db: Session):
+    """SQL-side array length so list views never load huge partner JSON into Python."""
+    dialect = db.get_bind().dialect.name
+    col = Company.announced_partners
+    if dialect == "sqlite":
+        # json_array_length() throws on invalid/empty strings; guard with json_valid (SQLite 3.38+).
+        return case(
+            (col.is_(None), 0),
+            (func.json_valid(col) == 0, 0),
+            (func.json_type(col, "$") == "array", func.coalesce(func.json_array_length(col), 0)),
+            else_=0,
+        )
+    if dialect == "postgresql":
+        j = cast(col, PGJSON)
+        return case(
+            (col.is_(None), 0),
+            (func.trim(func.coalesce(col, "")) == "", 0),
+            (func.json_typeof(j) == "array", func.coalesce(func.json_array_length(j), 0)),
+            else_=0,
+        )
+    return func.literal(0)
+
+
+def _company_dict_list(c: Company, partner_count: int) -> dict:
+    """List/grid payload: same keys as _company_dict; heavy texts stay in DB for /detail and /{id}."""
+    return {
+        "id": c.id,
+        "company_name": c.company_name,
+        "company_hq_city": c.company_hq_city,
+        "company_hq_state": c.company_hq_state,
+        "company_hq_country": c.company_hq_country,
+        "company_hq_lat": c.company_hq_lat,
+        "company_hq_lng": c.company_hq_lng,
+        "company_locations": [],
+        "company_type": c.company_type,
+        "company_status": c.company_status,
+        "company_focus": json.loads(c.company_focus or "[]"),
+        "supply_chain_segment": c.supply_chain_segment,
+        "keywords": json.loads(c.keywords or "[]"),
+        "announced_partners": [],
+        "announced_partners_count": partner_count,
+        "number_of_employees": c.number_of_employees,
+        "market_cap_usd": c.market_cap_usd,
+        "revenue_usd": c.revenue_usd,
+        "total_funding_usd": c.total_funding_usd,
+        "last_fundraise_date": c.last_fundraise_date,
+        "company_website": c.company_website,
+        "hq_company": c.hq_company,
+        "hq_company_website": c.hq_company_website,
+        "chemistries": c.chemistries,
+        "feedstock": c.feedstock,
+        "contact_name": None,
+        "contact_email": None,
+        "contact_phone": None,
+        "notes": None,
+        "summary": c.summary,
+        "long_description": None,
+        "extra_description": None,
+        "naatbatt_member": bool(c.naatbatt_member),
+        "naatbatt_id": c.naatbatt_id,
+        "contact_email2": None,
+        "sources": None,
+        "sources2": None,
+        "qc": c.qc,
+        "qc_date": c.qc_date,
+        "summary_word_count": c.summary_word_count,
+        "employee_size": c.employee_size,
+        "funding_status": c.funding_status,
+        "crunchbase_url": c.crunchbase_url,
+        "linkedin_url": c.linkedin_url,
+        "pitchbook_url": c.pitchbook_url,
+        "volta_member": bool(c.volta_member),
+        "volta_verified": bool(c.volta_verified),
+        "products": c.products,
+        "product_services_desc": None,
+        "battery_chemistry_flags": {},
+        "supply_chain_flags": {},
+        "gwh_capacity": json.loads(c.gwh_capacity or "{}"),
+        "plant_start_date": c.plant_start_date,
+        "last_updated": c.last_updated,
+        "data_source": c.data_source,
+    }
+
+
 @router.get("")
 def list_companies(
     search: str | None = None,
@@ -85,7 +247,11 @@ def list_companies(
     country: str | None = None,
     db: Session = Depends(get_db),
 ):
-    q = db.query(Company)
+    pc = _announced_partners_count_expr(db)
+    q = (
+        db.query(Company, pc.label("partner_count"))
+        .options(load_only(*_COMPANY_LIST_LOAD_ONLY))
+    )
     if search:
         q = q.filter(Company.company_name.ilike(f"%{search}%"))
     if type:
@@ -98,12 +264,17 @@ def list_companies(
         q = q.filter(Company.keywords.like(f"%{keyword}%"))
     if country:
         q = q.filter(Company.company_hq_country.ilike(f"%{country}%"))
-    return [_company_dict(c) for c in q.order_by(Company.company_name).all()]
+    rows = q.order_by(Company.company_name).all()
+    return [_company_dict_list(c, int(pn or 0)) for c, pn in rows]
 
 
 @router.get("/map")
 def companies_map(db: Session = Depends(get_db)):
-    companies = db.query(Company).all()
+    companies = (
+        db.query(Company)
+        .options(load_only(*_COMPANY_MAP_LOAD_ONLY))
+        .all()
+    )
     results = []
     for c in companies:
         locations = json.loads(c.company_locations or "[]")
@@ -172,7 +343,11 @@ def companies_map(db: Session = Depends(get_db)):
 
 @router.get("/network")
 def companies_network(db: Session = Depends(get_db)):
-    companies = db.query(Company).all()
+    companies = (
+        db.query(Company)
+        .options(load_only(*_COMPANY_NETWORK_LOAD_ONLY))
+        .all()
+    )
     nodes = []
     links = []
     company_index: dict[str, int] = {}  # name_lower -> node id

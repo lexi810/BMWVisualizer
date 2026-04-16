@@ -8,7 +8,6 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-import pandas as pd
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -35,6 +34,8 @@ async def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
         raise HTTPException(400, "Only CSV or XLSX files are supported.")
     path = _save_file(file)
     try:
+        import pandas as pd
+
         if file.filename.endswith(".csv"):
             df = pd.read_csv(path, dtype=str)
         else:
@@ -692,6 +693,8 @@ async def upload_partnerships(file: UploadFile = File(...), db: Session = Depend
         raise HTTPException(400, "Only CSV or XLSX files are supported.")
     path = _save_file(file)
     try:
+        import pandas as pd
+
         df = pd.read_csv(path, dtype=str) if file.filename.endswith(".csv") else pd.read_excel(path, dtype=str)
     except Exception as e:
         raise HTTPException(400, f"Failed to parse file: {e}")
