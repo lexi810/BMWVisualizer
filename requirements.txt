@@ -11,3 +11,4 @@ tavily-python
 python-dotenv
 apscheduler
 aiofiles
+psycopg2-binary==2.9.9
