@@ -120,7 +120,7 @@ function PopupContent({ c, onSelectCompany }) {
 function Legend() {
   const [collapsed, setCollapsed] = React.useState(false)
   return (
-    <div className="absolute bottom-8 right-4 z-[1000] bg-white rounded-lg shadow-lg text-xs border border-bmw-border overflow-hidden">
+    <div className="absolute bottom-8 left-4 z-[1000] bg-white rounded-lg shadow-lg text-xs border border-bmw-border overflow-hidden">
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="flex items-center justify-between w-full px-3 py-2 font-semibold text-[text-bmw-text-primary] hover:bg-bmw-gray-light"
