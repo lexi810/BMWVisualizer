@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
-psycopg2-binary
+psycopg2-binary==2.9.9
 pandas
 openpyxl
 pdfplumber
@@ -12,4 +12,3 @@ tavily-python
 python-dotenv
 apscheduler
 aiofiles
-psycopg2-binary==2.9.9
