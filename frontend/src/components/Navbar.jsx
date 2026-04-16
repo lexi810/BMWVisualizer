@@ -87,7 +87,7 @@ export default function Navbar({ activeTab, setActiveTab, watchlistBreaking = 0,
           <button
             onClick={handleSync}
             disabled={syncing}
-            className="border-2 border-bmw-blue text-bmw-blue hover:bg-bmw-blue hover:text-white disabled:opacity-40 text-xs px-3 py-1.5 rounded font-medium transition-colors"
+            className="bg-bmw-blue hover:bg-[#3a88ee] text-white disabled:opacity-40 text-xs px-4 py-1.5 rounded font-medium transition-colors"
           >
             {syncing ? 'Syncing\u2026' : 'Sync Now'}
           </button>
