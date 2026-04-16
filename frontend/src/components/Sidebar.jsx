@@ -14,12 +14,10 @@ const STATUSES = [
 ]
 
 const SEGMENTS = [
-  'Raw Materials', 'Battery Grade Materials', 'Other Battery Components & Mat.',
-  'Electrode & Cell Manufacturing', 'Module-Pack Manufacturing',
-  'Recycling-Repurposing', 'Equipment', 'R&D', 'Services & Consulting', 'Modeling & Software',
+  'Raw Materials', 'Upstream', 'Midstream', 'Downstream', 'Append2',
 ]
 
-const COUNTRIES = ['US', 'USA', 'Canada']
+const COUNTRIES = ['US', 'Canada']
 
 function DropdownFilter({ label, options, selected, onChange }) {
   const [open, setOpen] = useState(false)

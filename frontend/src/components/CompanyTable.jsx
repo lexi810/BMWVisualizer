@@ -94,7 +94,7 @@ const CATEGORY_COLORS = {
   'Raw Materials': '#F59E0B',
   'Battery Grade Materials': '#EAB308',
   'Other Battery Components & Mat.': '#D97706',
-  'Electrode & Cell Manufacturing': 'bmw-blue',
+  'Electrode & Cell Manufacturing': '#1C69D4',
   'Module-Pack Manufacturing': '#2563EB',
   'Recycling-Repurposing': '#10B981',
   'Equipment': '#06B6D4',
@@ -281,7 +281,7 @@ export default function CompanyTable({ filters, onOpenCompany }) {
       <div className="flex flex-wrap gap-1.5 px-4 pt-3 pb-2 bg-bmw-gray-light border-b border-bmw-border">
         {CATEGORIES.map((cat) => {
           const isActive = activeCategory === cat.key
-          const color = CATEGORY_COLORS[cat.key] || 'bmw-blue'
+          const color = CATEGORY_COLORS[cat.key] || '#1C69D4'
           const count = categoryCounts[cat.key] || 0
           return (
             <button
@@ -289,10 +289,10 @@ export default function CompanyTable({ filters, onOpenCompany }) {
               onClick={() => handleCategoryChange(cat.key)}
               className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                 isActive
-                  ? 'text-white shadow-sm'
+                  ? 'text-white shadow-sm font-semibold'
                   : 'bg-white text-gray-600 border border-bmw-border hover:bg-gray-50'
               }`}
-              style={isActive ? { backgroundColor: cat.key === 'all' ? 'bmw-blue' : color } : {}}
+              style={isActive ? { backgroundColor: color } : {}}
             >
               {cat.label}
               <span className={`ml-1.5 ${isActive ? 'text-white/80' : 'text-gray-400'}`}>

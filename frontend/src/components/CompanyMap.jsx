@@ -172,7 +172,7 @@ function HeatLegend() {
 
 /* ── Main component ── */
 
-export default function CompanyMap({ filters, onSelectCompany, highlightName, darkMode }) {
+export default function CompanyMap({ filters, onSelectCompany, highlightName }) {
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [heatmapMode, setHeatmapMode] = useState(false)
@@ -192,7 +192,16 @@ export default function CompanyMap({ filters, onSelectCompany, highlightName, da
     if (filters.types.length && !filters.types.includes(c.company_type)) return false
     if (filters.statuses.length && !filters.statuses.includes(c.company_status)) return false
     if (filters.segments.length && !filters.segments.includes(c.supply_chain_segment)) return false
-    if (filters.countries.length && !filters.countries.some((co) => c.facility_country?.includes(co) || c.company_hq_country?.includes(co))) return false
+    if (filters.countries.length) {
+      const facCountry = c.facility_country?.trim().toUpperCase() || ''
+      const hqCountry = c.company_hq_country?.trim().toUpperCase() || ''
+      const matched = filters.countries.some((co) => {
+        const countryUpper = co.toUpperCase()
+        return facCountry === countryUpper || hqCountry === countryUpper || 
+               facCountry.includes(countryUpper) || hqCountry.includes(countryUpper)
+      })
+      if (!matched) return false
+    }
     return true
   }), [companies, filters])
 
@@ -218,9 +227,9 @@ export default function CompanyMap({ filters, onSelectCompany, highlightName, da
         minZoom={1}
       >
         <TileLayer
-          key={darkMode ? 'dark' : 'light'}
-          attribution={darkMode ? DARK_ATTR : LIGHT_ATTR}
-          url={darkMode ? DARK_TILES : LIGHT_TILES}
+          key="light"
+          attribution={LIGHT_ATTR}
+          url={LIGHT_TILES}
         />
 
         {heatmapMode ? (

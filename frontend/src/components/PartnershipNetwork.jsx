@@ -120,8 +120,8 @@ function fmtVal(v) {
 
 /* ── Component ── */
 
-export default function PartnershipNetwork({ onSelectCompany, darkMode }) {
-  const dark = darkMode ?? false
+export default function PartnershipNetwork({ onSelectCompany }) {
+  const dark = false
   const [graphData, setGraphData] = useState({ nodes: [], links: [] })
   const [loading, setLoading] = useState(true)
   const [FG, setFG] = useState(null)

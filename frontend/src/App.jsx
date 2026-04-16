@@ -37,22 +37,6 @@ export default function App() {
     return () => clearInterval(iv)
   }, [])
 
-  // Dark mode — persisted in localStorage
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('bmw-dark-mode')
-    return saved === 'true'
-  })
-
-  useEffect(() => {
-    const root = document.documentElement
-    if (darkMode) {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-    localStorage.setItem('bmw-dark-mode', darkMode)
-  }, [darkMode])
-
   useEffect(() => {
     getSeedStatus()
       .then(({ data }) => {
@@ -91,8 +75,6 @@ export default function App() {
         <Navbar
           activeTab={activeTab}
           setActiveTab={(tab) => { setDetailCompanyId(null); setActiveTab(tab) }}
-          darkMode={darkMode}
-          setDarkMode={setDarkMode}
           watchlistBreaking={watchlistBreaking}
           onOpenDataImport={() => setDataImportOpen(true)}
         />
@@ -100,7 +82,6 @@ export default function App() {
           companyId={detailCompanyId}
           onClose={handleCloseCompanyPage}
           onOpenCompany={handleOpenCompanyPage}
-          darkMode={darkMode}
         />  
       </div>
     )
@@ -111,8 +92,6 @@ export default function App() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
         watchlistBreaking={watchlistBreaking}
         onOpenDataImport={() => setDataImportOpen(true)}
       />
@@ -144,7 +123,6 @@ export default function App() {
               filters={filters}
               onSelectCompany={handleOpenCompanyPage}
               highlightName={highlightCompany}
-              darkMode={darkMode}
             />
           )}
           {activeTab === 'table' && (
@@ -153,7 +131,7 @@ export default function App() {
           {activeTab === 'watchlist' && <WatchlistPanel />}
           {activeTab === 'news' && <NewsFeed />}
           {activeTab === 'network' && (
-            <PartnershipNetwork onSelectCompany={handleOpenCompanyPage} darkMode={darkMode} />
+            <PartnershipNetwork onSelectCompany={handleOpenCompanyPage} />
           )}
         </main>
       </div>
