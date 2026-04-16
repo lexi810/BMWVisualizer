@@ -41,7 +41,7 @@ export default function Navbar({ activeTab, setActiveTab, watchlistBreaking = 0,
 
   return (
     <nav className="bg-white select-none border-b border-bmw-border shadow-light" style={{ height: '56px' }}>
-      <div className="flex items-center h-full px-6 gap-8">
+      <div className="flex items-center h-full px-6 gap-4">
         {/* Logo + Title */}
         <div className="flex items-center gap-3 min-w-fit">
           <img
@@ -79,8 +79,8 @@ export default function Navbar({ activeTab, setActiveTab, watchlistBreaking = 0,
           ))}
         </div>
 
-        {/* Sync badge */}
-        <div className="flex items-center gap-3 min-w-fit">
+        {/* Sync badge + Data Import */}
+        <div className="flex items-center gap-2 min-w-fit">
           <span className="text-bmw-text-secondary text-xs whitespace-nowrap">
             Synced: <span className="text-bmw-text-primary font-medium">{lastSynced}</span>
           </span>
@@ -91,15 +91,13 @@ export default function Navbar({ activeTab, setActiveTab, watchlistBreaking = 0,
           >
             {syncing ? 'Syncing\u2026' : 'Sync Now'}
           </button>
+          <button
+            onClick={() => onOpenDataImport()}
+            className="bg-bmw-blue hover:bg-[#3a88ee] text-white text-xs px-4 py-1.5 rounded font-medium transition-colors"
+          >
+            Data Import
+          </button>
         </div>
-
-        {/* Data Import button */}
-        <button
-          onClick={() => onOpenDataImport()}
-          className="bg-bmw-blue hover:bg-[#3a88ee] text-white text-xs px-4 py-2 rounded font-medium transition-colors"
-        >
-          Data Import
-        </button>
       </div>
     </nav>
   )
